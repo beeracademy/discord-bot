@@ -212,15 +212,15 @@ class Academy(commands.Cog):
 
         discord_id = ctx.author.id
 
-        with session_scope() as session:
-            session.query(Link).filter(Link.discord_id == discord_id).delete()
-            try:
+        try:
+            with session_scope() as session:
+                session.query(Link).filter(Link.discord_id == discord_id).delete()
                 session.add(Link(discord_id=discord_id, academy_id=academy_id))
-            except IntegrityError:
-                await ctx.send(
-                    f"{ctx.author.mention} that academy user is already linked to someone else!"
-                )
-                return
+        except IntegrityError:
+            await ctx.send(
+                f"{ctx.author.mention} that academy user is already linked to someone else!"
+            )
+            return
 
         await ctx.send(
             f"{ctx.author.mention} is now linked with {username} on academy."
