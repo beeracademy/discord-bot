@@ -62,9 +62,8 @@ class Academy(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.guild = utils.get(self.bot.guilds, name="Fredagscafeen (datbar)")
-        # self.guild = utils.get(self.bot.guilds, name="Test Server")
-        self.channel = utils.get(self.guild.channels, name="academy")
+        self.guild = utils.get(self.bot.guilds, name=os.environ["DISCORD_GUILD"])
+        self.channel = utils.get(self.guild.channels, name=os.environ["DISCORD_CHANNEL"])
 
         await self.update_status()
         print(f"Connected as {self.bot.user}")
