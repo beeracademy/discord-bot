@@ -19,6 +19,14 @@ load_dotenv()
 bot = commands.Bot("!", case_insensitive=True)
 
 
+def get_dict(l, **kwargs):
+    for d in l:
+        if all(d[k] == v for k, v in kwargs.items()):
+            return d
+
+    return None
+
+
 def plural(count, name):
     s = f"{count} {name}"
     if count != 1:
@@ -69,15 +77,32 @@ class Academy(commands.Cog):
         print(f"Connected as {self.bot.user}")
         self.bot.loop.create_task(self.background_task())
 
-    def get_player_name(self, player_stats):
-        academy_id = player_stats["id"]
+    def get_academy_id(self, discord_id):
+        with session_scope() as session:
+            try:
+                link = session.query(Link).filter(Link.discord_id == discord_id).one()
+                return link.academy_id
+            except NoResultFound:
+                return None
+
+    def get_discord_id(self, academy_id):
         with session_scope() as session:
             try:
                 link = session.query(Link).filter(Link.academy_id == academy_id).one()
-                discord_id = link.discord_id
-                return self.bot.get_user(discord_id).mention
+                return link.discord_id
             except NoResultFound:
-                return player_stats["username"]
+                return None
+
+    def get_player_name(self, player_stats):
+        academy_id = player_stats["id"]
+        discord_id = self.get_discord_id(academy_id)
+        if discord_id:
+            return self.bot.get_user(discord_id).mention
+        else:
+            return player_stats["username"]
+
+    def level_info(self, player_stats):
+        return f"To be on level they have to have drunk {plural(player_stats['full_beers'], 'beer')} and {plural(player_stats['extra_sips'], 'sip')}."
 
     async def send_info(self, game_data):
         player_stats = game_data["player_stats"]
@@ -96,8 +121,7 @@ class Academy(commands.Cog):
             card = game_data["cards"][-1]
             message += f"{previous_player_name} just got a {card['value']}.\n\n"
 
-        message += f"""Now it's {player_name}'s turn:
-To be on level they have to have drunk {plural(current_player_stats['full_beers'], 'beer')} and {plural(current_player_stats['extra_sips'], 'sip')}."""
+        message += f"Now it's {player_name}'s turn:\n" + self.level_info(player_stats[player_index])
 
         await self.channel.send(message)
 
@@ -209,6 +233,18 @@ To be on level they have to have drunk {plural(current_player_stats['full_beers'
     @commands.command(name="status")
     async def status(self, ctx):
         await self.post_game_update(self.game_data)
+
+    @commands.command(name="level")
+    async def level(self, ctx):
+        academy_id = self.get_academy_id(ctx.author.id)
+
+        player_stats = get_dict(self.game_data["player_stats"], id=academy_id)
+        if player_stats:
+            s = f"{ctx.author.mention}:\n"
+            s += self.level_info(player_stats)
+            await ctx.send(s)
+        else:
+            await ctx.send(f"{ctx.author.mention} doesn't seem to be in game {self.current_game_id}.\nTry linking your accounts with !link")
 
 
 bot.add_cog(Academy(bot))
