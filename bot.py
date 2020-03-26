@@ -159,13 +159,7 @@ To be on level they have to have drunk {plural(current_player_stats['full_beers'
         await self.update_status()
 
     @commands.command(name="follow")
-    async def follow(self, ctx, *args):
-        try:
-            game_id = int(args[0])
-        except:
-            await ctx.send("Invalid game id!")
-            return
-
+    async def follow(self, ctx, game_id: int):
         try:
             self.game_data = await self.get_game_data(game_id)
         except ClientResponseError:
@@ -177,7 +171,7 @@ To be on level they have to have drunk {plural(current_player_stats['full_beers'
         await self.post_game_update(self.game_data)
 
     @commands.command(name="unfollow")
-    async def unfollow(self, ctx, *args):
+    async def unfollow(self, ctx):
         game_id = self.current_game_id
         if game_id:
             await self.set_followed_game(None)
@@ -186,13 +180,7 @@ To be on level they have to have drunk {plural(current_player_stats['full_beers'
             await ctx.send(f"Not currently following any game!")
 
     @commands.command(name="link")
-    async def link(self, ctx, *args):
-        try:
-            academy_id = int(args[0])
-        except:
-            await ctx.send("Invalid academy id!")
-            return
-
+    async def link(self, ctx, academy_id: int):
         try:
             username = await self.get_username(academy_id)
         except:
@@ -211,14 +199,16 @@ To be on level they have to have drunk {plural(current_player_stats['full_beers'
                 )
                 return
 
-        await ctx.send(f"{ctx.author.mention} is now linked with {username} on academy.")
+        await ctx.send(
+            f"{ctx.author.mention} is now linked with {username} on academy."
+        )
 
     @commands.command(name="test")
-    async def test(self, ctx, *args):
+    async def test(self, ctx):
         await ctx.send(f"Test {ctx.author.mention}")
 
     @commands.command(name="status")
-    async def status(self, ctx, *args):
+    async def status(self, ctx):
         await self.post_game_update(self.game_data)
 
 
