@@ -12,17 +12,11 @@ from discord import Game, utils
 from discord.ext import commands
 from dotenv import load_dotenv
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 
 load_dotenv()
 
-bot = commands.Bot("!")
-
-
-@bot.event
-async def on_ready():
-    print(f"Logged in as {bot.user}")
-    print(f"In following guilds:", [g.name for g in bot.guilds])
+bot = commands.Bot("!", case_insensitive=False)
 
 
 class Academy(commands.Cog):
@@ -65,44 +59,56 @@ class Academy(commands.Cog):
         self.channel = utils.get(self.guild.channels, name="academy")
 
         await self.update_status()
+        print(f"Connected as {self.bot.user}")
         self.bot.loop.create_task(self.background_task())
 
-    def get_player_name(self, academy_id):
+    def get_player_name(self, player_stats):
+        academy_id = player_stats["id"]
         with session_scope() as session:
             try:
                 link = session.query(Link).filter(Link.academy_id == academy_id).one()
                 discord_id = link.discord_id
                 return self.bot.get_user(discord_id).mention
             except NoResultFound:
-                return f"Unknown player"
+                return f"unknown (please user !link) player"
+
+
+    async def send_info(self, player_stats):
+        player_name = await self.get_player_name(player_stats)
+        await self.channel.send(
+            f"""Now it's {player_name}'s turn:
+To be on level they have to have drunk {player_stats['full_beers']} beer(s) and {player_stats['extra_sips']} sip(s) to be on level."""
+        )
+
 
     async def post_game_update(self, game_data):
         player_count = len(game_data["player_stats"])
         card_count = len(game_data["cards"])
         player_index = card_count % player_count
-        player_stats = game_data["player_stats"][player_index]
-        academy_id = player_stats["id"]
-
-        player_name = self.get_player_name(academy_id)
-
+        player_count = len(game_data["player_stats"])
         total_card_count = player_count * 13
         if card_count == total_card_count:
-            await self.channel.send(f"The game has finished, look at the stats at https://academy.beer/games/{self.current_game_id}/")
-        else:
             await self.channel.send(
-                f"""Now it's {player_name}'s turn:
-    To be on level they have to have drunk {player_stats['full_beers']} beer(s) and {player_stats['extra_sips']} sip(s) to be on level."""
+                f"The game has finished, look at the stats at https://academy.beer/games/{self.current_game_id}/"
             )
+        else:
+            card_count = len(game_data["cards"])
+            player_index = card_count % player_count
+            await self.send_info(game_data, game_data["player_stats"][player_index])
 
     async def get_game_data(self, game_id):
-        async with aiohttp.ClientSession(raise_for_status=True, timeout=self.TIMEOUT) as session:
+        async with aiohttp.ClientSession(
+            raise_for_status=True, timeout=self.TIMEOUT
+        ) as session:
             async with session.get(
                 f"https://academy.beer/api/games/{game_id}/"
             ) as response:
                 return await response.json()
 
     async def get_username(self, user_id):
-        async with aiohttp.ClientSession(raise_for_status=True, timeout=self.TIMEOUT) as session:
+        async with aiohttp.ClientSession(
+            raise_for_status=True, timeout=self.TIMEOUT
+        ) as session:
             async with session.get(
                 f"https://academy.beer/api/users/{user_id}/"
             ) as response:
@@ -182,7 +188,7 @@ class Academy(commands.Cog):
 
     @commands.command(name="status")
     async def status(self, ctx, *args):
-        await ctx.send(f"Status:")
+        await self.post_game_update(self.game_data)
 
 
 bot.add_cog(Academy(bot))
