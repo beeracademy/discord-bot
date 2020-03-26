@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO)
 
 load_dotenv()
 
-bot = commands.Bot("!", case_insensitive=False)
+bot = commands.Bot("!", case_insensitive=True)
 
 
 class Academy(commands.Cog):
