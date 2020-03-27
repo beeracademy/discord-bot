@@ -71,7 +71,9 @@ class Academy(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.guild = utils.get(self.bot.guilds, name=os.environ["DISCORD_GUILD"])
-        self.channel = utils.get(self.guild.channels, name=os.environ["DISCORD_CHANNEL"])
+        self.channel = utils.get(
+            self.guild.channels, name=os.environ["DISCORD_CHANNEL"]
+        )
 
         await self.update_status()
         print(f"Connected as {self.bot.user}")
@@ -102,7 +104,7 @@ class Academy(commands.Cog):
             return player_stats["username"]
 
     def level_info(self, player_stats):
-        return f"To be on level they have to have drunk {plural(player_stats['full_beers'], 'beer')} and {plural(player_stats['extra_sips'], 'sip')}."
+        return f"To be on level they have to have drunk {plural(player_stats['full_beers'], 'full beer')} and {plural(player_stats['extra_sips'], 'sip')}."
 
     async def send_info(self, game_data):
         player_stats = game_data["player_stats"]
@@ -121,7 +123,9 @@ class Academy(commands.Cog):
             card = game_data["cards"][-1]
             message += f"{previous_player_name} just got a {card['value']}.\n\n"
 
-        message += f"Now it's {player_name}'s turn:\n" + self.level_info(player_stats[player_index])
+        message += f"Now it's {player_name}'s turn:\n" + self.level_info(
+            player_stats[player_index]
+        )
 
         await self.channel.send(message)
 
@@ -244,7 +248,9 @@ class Academy(commands.Cog):
             s += self.level_info(player_stats)
             await ctx.send(s)
         else:
-            await ctx.send(f"{ctx.author.mention} doesn't seem to be in game {self.current_game_id}.\nTry linking your accounts with !link")
+            await ctx.send(
+                f"{ctx.author.mention} doesn't seem to be in game {self.current_game_id}.\nTry linking your accounts with !link"
+            )
 
 
 bot.add_cog(Academy(bot))
