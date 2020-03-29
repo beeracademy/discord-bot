@@ -16,6 +16,9 @@ logging.basicConfig(level=logging.INFO)
 
 load_dotenv()
 
+GIT_COMMIT_HASH = os.environ["GIT_COMMIT_HASH"]
+GIT_COMMIT_URL = f"https://github.com/beeracademy/discord-bot/commit/{GIT_COMMIT_HASH}"
+
 bot = commands.Bot("!", case_insensitive=True)
 
 
@@ -254,6 +257,10 @@ class Academy(commands.Cog):
     async def test(self, ctx):
         await ctx.send(f"Test {ctx.author.mention}")
 
+    @commands.command(name="version")
+    async def version(self, ctx):
+        await ctx.send(f"I'm currently running the following version: {GIT_COMMIT_URL}")
+
     @commands.command(name="status")
     async def status(self, ctx):
         await self.post_game_update(self.game_data)
@@ -261,7 +268,9 @@ class Academy(commands.Cog):
     @commands.command(name="level")
     async def level(self, ctx):
         if not self.game_id:
-            await ctx.send(f"{ctx.author.mention} the bot isn't currently following a game.\nTry using !follow")
+            await ctx.send(
+                f"{ctx.author.mention} the bot isn't currently following a game.\nTry using !follow"
+            )
             return
 
         academy_id = self.get_academy_id(ctx.author.id)

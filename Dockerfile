@@ -10,4 +10,7 @@ RUN poetry install --no-dev --no-interaction
 
 COPY . /app
 
+ARG GIT_COMMIT_HASH
+ENV GIT_COMMIT_HASH $GIT_COMMIT_HASH
+
 CMD ["python", "bot.py"]
