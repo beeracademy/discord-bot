@@ -83,6 +83,10 @@ class Academy(commands.Cog):
         logging.info(f"Connected as {self.bot.user}")
         self.bot.loop.create_task(self.background_task())
 
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx, error):
+        await ctx.send(f"Got an error: {error}")
+
     def get_academy_id(self, discord_id):
         with session_scope() as session:
             try:
