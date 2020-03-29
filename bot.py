@@ -1,4 +1,5 @@
 import asyncio
+import pprint
 import logging
 import os
 
@@ -294,7 +295,7 @@ class Academy(commands.Cog):
         await ctx.send(f"""Current game id: {self.current_game_id}
 Current game data:
 ```python
-{self.game_data}
+{pprint.pformat(self.game_data)}
 ```""")
 
 
