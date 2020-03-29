@@ -285,6 +285,14 @@ class Academy(commands.Cog):
                 f"{ctx.author.mention} doesn't seem to be in game {self.current_game_id}.\nTry linking your accounts with !link"
             )
 
+    @commands.command(name="debug")
+    async def debug(self, ctx):
+        await ctx.send(f"""Current game id: {self.current_game_id}
+Current game data:
+```python
+self.game_data
+```""")
+
 
 bot.add_cog(Academy(bot))
 bot.run(os.environ["DISCORD_TOKEN"])
