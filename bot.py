@@ -50,10 +50,10 @@ class Academy(commands.Cog):
                     self.get_game_data(self.current_game_id)
                 )
 
-                print(f"Got game id from saved state: {self.current_game_id}.")
+                logging.info(f"Got game id from saved state: {self.current_game_id}.")
             except (NoResultFound, ClientResponseError):
                 self.current_game_id = None
-                print("No game id saved state.")
+                logging.info("No game id saved state.")
 
     async def update_status(self):
         async with self.lock:
@@ -76,7 +76,7 @@ class Academy(commands.Cog):
         )
 
         await self.update_status()
-        print(f"Connected as {self.bot.user}")
+        logging.info(f"Connected as {self.bot.user}")
         self.bot.loop.create_task(self.background_task())
 
     def get_academy_id(self, discord_id):
@@ -151,7 +151,7 @@ class Academy(commands.Cog):
                         res = await response.json()
                         return res
                 except asyncio.TimeoutError:
-                    print("Timed out getting game data, retrying in 1 second...")
+                    logging.info("Timed out getting game data, retrying in 1 second...")
                     await asyncio.sleep(1)
 
     async def get_username(self, user_id):
