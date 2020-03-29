@@ -272,7 +272,7 @@ class Academy(commands.Cog):
 
     @commands.command(name="level")
     async def level(self, ctx):
-        if not self.game_id:
+        if not self.current_game_id:
             await ctx.send(
                 f"{ctx.author.mention} the bot isn't currently following a game.\nTry using !follow"
             )
