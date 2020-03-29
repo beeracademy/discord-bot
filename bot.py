@@ -143,11 +143,16 @@ class Academy(commands.Cog):
         async with aiohttp.ClientSession(
             raise_for_status=True, timeout=self.TIMEOUT
         ) as session:
-            async with session.get(
-                f"https://academy.beer/api/games/{game_id}/"
-            ) as response:
-                res = await response.json()
-                return res
+            while True:
+                try:
+                    async with session.get(
+                        f"https://academy.beer/api/games/{game_id}/"
+                    ) as response:
+                        res = await response.json()
+                        return res
+                except asyncio.TimeoutError:
+                    print("Timed out getting game data, retrying in 1 second...")
+                    await asyncio.sleep(1)
 
     async def get_username(self, user_id):
         async with aiohttp.ClientSession(
