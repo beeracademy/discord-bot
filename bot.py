@@ -290,7 +290,7 @@ class Academy(commands.Cog):
         await ctx.send(f"""Current game id: {self.current_game_id}
 Current game data:
 ```python
-self.game_data
+{self.game_data}
 ```""")
 
 
