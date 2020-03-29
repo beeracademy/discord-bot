@@ -211,6 +211,12 @@ class Academy(commands.Cog):
         else:
             await ctx.send(f"Not currently following any game!")
 
+    def set_linked_account(self, discord_id, academy_id):
+        with session_scope() as session:
+            session.query(Link).filter(Link.discord_id == discord_id).delete()
+            if academy_id:
+                session.add(Link(discord_id=discord_id, academy_id=academy_id))
+
     @commands.command(name="link")
     async def link(self, ctx, academy_id: int):
         try:
@@ -222,17 +228,24 @@ class Academy(commands.Cog):
         discord_id = ctx.author.id
 
         try:
-            with session_scope() as session:
-                session.query(Link).filter(Link.discord_id == discord_id).delete()
-                session.add(Link(discord_id=discord_id, academy_id=academy_id))
+            self.set_linked_account(discord_id, academy_id)
         except IntegrityError:
+            linked_discord_id = self.get_discord_id(academy_id)
+            linked_mention = self.bot.get_user(linked_discord_id).mention
             await ctx.send(
-                f"{ctx.author.mention} that academy user is already linked to someone else!"
+                f"{ctx.author.mention} {username} is already linked to {linked_mention}!"
             )
             return
 
         await ctx.send(
             f"{ctx.author.mention} is now linked with {username} on academy."
+        )
+
+    @commands.command(name="unlink")
+    async def unlink(self, ctx):
+        self.set_linked_account(ctx.author.id, None)
+        await ctx.send(
+            f"{ctx.author.mention} is now no longer linked to any academy user."
         )
 
     @commands.command(name="test")
