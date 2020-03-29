@@ -53,6 +53,7 @@ class Academy(commands.Cog):
                 logging.info(f"Got game id from saved state: {self.current_game_id}.")
             except (NoResultFound, ClientResponseError):
                 self.current_game_id = None
+                self.game_data = None
                 logging.info("No game id saved state.")
 
     async def update_status(self):
@@ -207,6 +208,7 @@ class Academy(commands.Cog):
         game_id = self.current_game_id
         if game_id:
             await self.set_followed_game(None)
+            self.game_data = None
             await ctx.send(f"Unfollowed game {game_id}.")
         else:
             await ctx.send(f"Not currently following any game!")
@@ -258,6 +260,10 @@ class Academy(commands.Cog):
 
     @commands.command(name="level")
     async def level(self, ctx):
+        if not self.game_id:
+            await ctx.send(f"{ctx.author.mention} the bot isn't currently following a game.\nTry using !follow")
+            return
+
         academy_id = self.get_academy_id(ctx.author.id)
 
         player_stats = get_dict(self.game_data["player_stats"], id=academy_id)
