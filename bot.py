@@ -223,6 +223,9 @@ class Academy(commands.Cog):
                 channel = await self.get_game_channel(game_id)
                 await channel.edit(category=self.finished_category)
 
+        if game_ids != old_game_ids:
+            await self.update_status()
+
     async def get_game_data(self, game_id):
         async with aiohttp.ClientSession(
             raise_for_status=True, timeout=self.TIMEOUT
