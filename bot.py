@@ -7,6 +7,7 @@ import aiohttp
 from aiohttp.client_exceptions import ClientResponseError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
+from texttable import Texttable
 
 from db import Link, session_scope
 from discord import Game, utils
@@ -361,6 +362,33 @@ class Academy(commands.Cog):
             await ctx.send(
                 f"{ctx.author.mention} doesn't seem to be in game {game_id}."
             )
+
+    @commands.command(name="table", aliases=["t"])
+    async def table(self, ctx, game_id: Optional[int]):
+        game_data = await self.get_game_data_from_ctx(ctx, game_id)
+        if not game_data:
+            return
+
+        t = Texttable()
+        t.set_deco(Texttable.HEADER)
+        header = ["\nRound"]
+        for p in game_data["player_stats"]:
+            header.append(f"{p['username']}\n{plural(p['full_beers'], 'beer')}\n{plural(p['extra_sips'], 'sip')}")
+
+        t.header(header)
+
+        cards = game_data["cards"]
+        player_count = len(game_data["player_stats"])
+
+        for i in range(13):
+            row = [i + 1]
+            for j in range(player_count):
+                k = i * player_count + j
+                row.append(cards[k]["value"] if k < len(cards) else "")
+
+            t.add_row(row)
+
+        await ctx.send(f"```\n{t.draw()}\n```")
 
 
 bot.add_cog(Academy(bot))
