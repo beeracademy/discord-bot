@@ -68,7 +68,9 @@ class Academy(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.guild = utils.get(self.bot.guilds, DISCORD_GUILD)
+        self.guild = utils.get(self.bot.guilds, name=DISCORD_GUILD)
+        self.live_category = utils.get(self.guild.categories, name="Live Games")
+        self.finished_category = utils.get(self.guild.categories, name="Finished Games")
         await self.update_status()
         logging.info(f"Connected as {self.bot.user}")
         self.bot.loop.create_task(self.background_task())
@@ -130,6 +132,7 @@ class Academy(commands.Cog):
             )
             channel = await self.guild.create_text_channel(
                 channel_name,
+                category=self.live_category,
                 topic=f"Game with {user_str}: https://academy.beer/games/{game_id}/",
             )
             await channel.edit(position=0)
@@ -217,7 +220,8 @@ class Academy(commands.Cog):
                     f"Game has now ended. See https://academy.beer/games/{game_id}/",
                 )
                 del self.game_datas[game_id]
-                # TODO: Delete channel?
+                channel = await self.get_game_channel(game_id)
+                await channel.edit(category=self.finished_category)
 
     async def get_game_data(self, game_id):
         async with aiohttp.ClientSession(
