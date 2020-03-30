@@ -53,8 +53,19 @@ def plural(count, name):
 
 
 def code_block_escape(s):
-    zwj = "\N{ZERO WIDTH JOINER}"
-    return s.replace("```", f"`{zwj}`{zwj}`")
+    ns = ""
+    count = 0
+    for c in s:
+        if c == "`":
+            count += 1
+            if count == 3:
+                ns += "\N{ZERO WIDTH JOINER}"
+                count = 1
+        else:
+            count = 0
+
+        ns += c
+    return ns
 
 
 class Academy(commands.Cog):
@@ -416,6 +427,8 @@ class Academy(commands.Cog):
         escaped = code_block_escape(repr(res))
         message = f"```python\n{escaped}\n```"
         if len(message) > MAX_DISCORD_MESSAGE_LENGTH:
+            # The reason that we can safely truncate the message
+            # is because of how code_block_escape works
             prefix = "Truncated result to length 0000:\n"
             suffix = "\n```"
             message = message.rstrip("`").strip()
