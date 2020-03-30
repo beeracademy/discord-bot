@@ -1,5 +1,4 @@
 import asyncio
-import pprint
 import logging
 import os
 
@@ -292,11 +291,7 @@ class Academy(commands.Cog):
 
     @commands.command(name="debug")
     async def debug(self, ctx):
-        await ctx.send(f"""Current game id: {self.current_game_id}
-Current game data:
-```python
-{pprint.pformat(self.game_data)}
-```""")
+        await ctx.send(f"Current game id: {self.current_game_id}")
 
 
 bot.add_cog(Academy(bot))
