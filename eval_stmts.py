@@ -17,34 +17,51 @@ def insert_returns(body):
     if isinstance(body[-1], ast.With):
         insert_returns(body[-1].body)
 
+    # for with blocks, again we insert returns into the body
+    if isinstance(body[-1], ast.AsyncWith):
+        insert_returns(body[-1].body)
 
-async def eval_stmts(stmts, env):
-    """Evaluates input.
-    Input is interpreted as newline seperated statements.
-    If the last statement is an expression, that is the return value.
-    Such that `>eval 1 + 1` gives `2` as the result.
-    The following invokation will cause the bot to send the text '9'
-    to the channel of invokation and return '3' as the result of evaluating
-    >eval ```
-    a = 1 + 2
-    b = a * 2
-    await ctx.send(a + b)
-    a
-    ```
+
+async def eval_stmts(stmts, env=None):
     """
+    Evaluates input.
+    If the last statement is an expression, that is the return value.
+
+    >>> from asyncio import run
+    >>> run(eval_stmts("1+1"))
+    2
+
+    >>> ctx = {}
+    >>> run(eval_stmts("ctx['foo'] = 1", {"ctx": ctx}))
+    >>> ctx['foo']
+    1
+
+    >>> run(eval_stmts('''
+    ... async def f():
+    ...    return 42
+    ...
+    ... await f()'''))
+    42
+    """
+
+    parsed_stmts = ast.parse(stmts)
+
     fn_name = "_eval_expr"
 
-    # add a layer of indentation
-    stmts = "\n".join(f" {i}" for i in stmts.splitlines())
+    fn = f"async def {fn_name}(): pass"
+    parsed_fn = ast.parse(fn)
 
-    # wrap in async def body
-    body = f"async def {fn_name}():\n{stmts}"
+    for node in parsed_stmts.body:
+        ast.increment_lineno(node)
 
-    parsed = ast.parse(body)
-    body = parsed.body[0].body
+    insert_returns(parsed_stmts.body)
 
-    insert_returns(body)
-
-    exec(compile(parsed, filename="<ast>", mode="exec"), env)
+    parsed_fn.body[0].body = parsed_stmts.body
+    exec(compile(parsed_fn, filename="<ast>", mode="exec"), env)
 
     return await eval(f"{fn_name}()", env)
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
