@@ -293,7 +293,7 @@ class Academy(commands.Cog):
             f"{ctx.author.mention} is now linked with {username} on academy."
         )
 
-    @commands.command(name="unlink")
+    @commands.command(name="unlink", aliases=["ul"])
     async def unlink(self, ctx):
         self.set_linked_account(ctx.author.id, None)
         await ctx.send(
@@ -304,7 +304,7 @@ class Academy(commands.Cog):
     async def test(self, ctx):
         await ctx.send(f"Test {ctx.author.mention}")
 
-    @commands.command(name="version")
+    @commands.command(name="version", aliases=["v"])
     async def version(self, ctx):
         await ctx.send(f"I'm currently running the following version: {GIT_COMMIT_URL}")
 
@@ -331,13 +331,13 @@ class Academy(commands.Cog):
 
         return game_data
 
-    @commands.command(name="status")
+    @commands.command(name="status", aliases=["s"])
     async def status(self, ctx, game_id: Optional[int]):
         game_data = await self.get_game_data_from_ctx(ctx, game_id)
         if game_data:
             await self.post_game_update(game_data)
 
-    @commands.command(name="level")
+    @commands.command(name="level", aliases=["l"])
     async def level(self, ctx, game_id: Optional[int]):
         game_data = await self.get_game_data_from_ctx(ctx, game_id)
         if not game_data:
