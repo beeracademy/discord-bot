@@ -157,14 +157,14 @@ class Academy(commands.Cog):
         player_name = self.get_player_name(current_player_stats)
 
         message = ""
-        is_ace = False
+        is_ace_not_done = False
         if game_data["cards"]:
             card = game_data["cards"][-1]
 
             if card["value"] == 14:
-                is_ace = True
                 duration = card["chug_duration_ms"]
                 if duration == None:
+                    is_ace_not_done = True
                     message += (
                         f"{previous_player_name} just got an ace, so they have to chug!"
                     )
@@ -173,7 +173,7 @@ class Academy(commands.Cog):
             else:
                 message += f"{previous_player_name} just got a {card['value']}.\n\n"
 
-        if not is_ace and card_count != total_card_count:
+        if not is_ace_not_done and card_count != total_card_count:
             message += f"Now it's {player_name}'s turn:\n" + self.level_info(
                 player_stats[player_index]
             )
