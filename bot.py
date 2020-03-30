@@ -12,7 +12,7 @@ from texttable import Texttable
 from db import Link, session_scope
 from discord import Game, utils
 from discord.channel import TextChannel
-from discord.ext import commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 from eval_stmts import eval_stmts
 
@@ -74,6 +74,18 @@ class Academy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.game_datas = {}
+        self.update_game_datas.start()
+
+    def cog_unload(self):
+        self.update_game_datas.cancel()
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        self.guild = utils.get(self.bot.guilds, name=DISCORD_GUILD)
+        self.live_category = utils.get(self.guild.categories, name="Live Games")
+        self.finished_category = utils.get(self.guild.categories, name="Finished Games")
+        await self.update_status()
+        logging.info(f"Connected as {self.bot.user}")
 
     async def update_status(self):
         if self.game_datas:
@@ -86,15 +98,6 @@ class Academy(commands.Cog):
             await self.bot.change_presence(
                 activity=Game(name="Waiting for new players: https://academy.beer/")
             )
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        self.guild = utils.get(self.bot.guilds, name=DISCORD_GUILD)
-        self.live_category = utils.get(self.guild.categories, name="Live Games")
-        self.finished_category = utils.get(self.guild.categories, name="Finished Games")
-        await self.update_status()
-        logging.info(f"Connected as {self.bot.user}")
-        self.bot.loop.create_task(self.background_task())
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
@@ -201,6 +204,7 @@ class Academy(commands.Cog):
 
         await self.send_in_game_channel(game_data["id"], message)
 
+    @tasks.loop(seconds=1)
     async def update_game_datas(self):
         async with aiohttp.ClientSession(
             raise_for_status=True, timeout=self.TIMEOUT
@@ -248,6 +252,10 @@ class Academy(commands.Cog):
         if game_ids != old_game_ids:
             await self.update_status()
 
+    @update_game_datas.before_loop
+    async def wait_until_ready(self):
+        await self.bot.wait_until_ready()
+
     async def get_game_data(self, game_id):
         async with aiohttp.ClientSession(
             raise_for_status=True, timeout=self.TIMEOUT
@@ -271,19 +279,6 @@ class Academy(commands.Cog):
                 f"https://academy.beer/api/users/{user_id}/"
             ) as response:
                 return (await response.json())["username"]
-
-    async def background_task(self):
-        while True:
-            try:
-                await self.update_game_datas()
-            except ClientResponseError as e:
-                """await self.channel.send(
-                    "Failed to update game data."
-                )"""
-                logging.error(e)
-                pass
-
-            await asyncio.sleep(1)
 
     def set_linked_account(self, discord_id, academy_id):
         with session_scope() as session:
