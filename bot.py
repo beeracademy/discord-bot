@@ -9,12 +9,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from texttable import Texttable
 
-from eval_stmts import eval_stmts
 from db import Link, session_scope
 from discord import Game, utils
 from discord.channel import TextChannel
 from discord.ext import commands
 from dotenv import load_dotenv
+from eval_stmts import eval_stmts
 
 logging.basicConfig(level=logging.INFO)
 
@@ -29,6 +29,9 @@ if os.getenv("TEST_GUILD") == "1":
 else:
     DISCORD_TOKEN = os.environ["DISCORD_TOKEN"]
     DISCORD_GUILD = os.environ["DISCORD_GUILD"]
+
+
+MAX_DISCORD_MESSAGE_LENGTH = 2000
 
 bot = commands.Bot("!", case_insensitive=True)
 
@@ -47,6 +50,11 @@ def plural(count, name):
         s += "s"
 
     return s
+
+
+def code_block_escape(s):
+    zwj = "\N{ZERO WIDTH JOINER}"
+    return s.replace("```", f"`{zwj}`{zwj}`")
 
 
 class Academy(commands.Cog):
@@ -280,6 +288,8 @@ class Academy(commands.Cog):
             await ctx.send("Couldn't get user data! Does the user exist?")
             return
 
+        username = utils.escape_markdown(username)
+
         discord_id = ctx.author.id
 
         try:
@@ -392,17 +402,29 @@ class Academy(commands.Cog):
 
             t.add_row(row)
 
-        await ctx.send(f"```\n{t.draw()}\n```")
+        await ctx.send(f"```\n{code_block_escape(t.draw())}\n```")
 
     @commands.command(name="eval")
     @commands.is_owner()
     async def eval(self, ctx, *, stmts):
-        stmts = stmts.strip("` ")
-        res = await eval_stmts(stmts, {
-            "academy": self,
-            "ctx": ctx,
-        })
-        await ctx.send(f"```python\n{res!r}\n```", )
+        stmts = stmts.strip().strip("`")
+        if not stmts:
+            await ctx.send("After stripping \`'s, stmts can't be empty.")
+            return
+
+        res = await eval_stmts(stmts, {"academy": self, "ctx": ctx,})
+        escaped = code_block_escape(repr(res))
+        message = f"```python\n{escaped}\n```"
+        if len(message) > MAX_DISCORD_MESSAGE_LENGTH:
+            prefix = "Truncated result to length 0000:\n"
+            suffix = "\n```"
+            message = message.rstrip("`").strip()
+
+            new_length = MAX_DISCORD_MESSAGE_LENGTH - len(prefix) - len(suffix)
+            prefix = prefix.replace("0000", str(new_length))
+            message = prefix + message[:new_length] + suffix
+
+        await ctx.send(message)
 
 
 bot.add_cog(Academy(bot))
