@@ -399,7 +399,7 @@ class Academy(commands.Cog):
     async def eval(self, ctx, *, stmts):
         stmts = stmts.strip("` ")
         res = await eval_stmts(stmts, {
-            "bot": self.bot,
+            "academy": self,
             "ctx": ctx,
         })
         await ctx.send(f"```python\n{res!r}\n```", )
