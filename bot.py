@@ -216,9 +216,10 @@ class Academy(commands.Cog):
         for game_id in list(self.game_datas.keys()):
             if game_id not in game_ids:
                 logging.info(f"Game is done: {game_id}")
+                final_data = await self.get_game_data(game_id)
                 await self.send_in_game_channel(
                     game_id,
-                    f"Game has now ended. See https://academy.beer/games/{game_id}/",
+                    f"Game has now ended.\nDescription: {final_data['description']}\nSee https://academy.beer/games/{game_id}/ for more info.",
                 )
                 del self.game_datas[game_id]
                 channel = await self.get_game_channel(game_id)
