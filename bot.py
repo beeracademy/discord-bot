@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from texttable import Texttable
 
+from eval_stmts import eval_stmts
 from db import Link, session_scope
 from discord import Game, utils
 from discord.channel import TextChannel
@@ -374,7 +375,9 @@ class Academy(commands.Cog):
         t.set_deco(Texttable.HEADER)
         header = ["\nRound"]
         for p in game_data["player_stats"]:
-            header.append(f"{p['username']}\n{plural(p['full_beers'], 'beer')}\n{plural(p['extra_sips'], 'sip')}")
+            header.append(
+                f"{p['username']}\n{plural(p['full_beers'], 'beer')}\n{plural(p['extra_sips'], 'sip')}"
+            )
 
         t.header(header)
 
@@ -390,6 +393,16 @@ class Academy(commands.Cog):
             t.add_row(row)
 
         await ctx.send(f"```\n{t.draw()}\n```")
+
+    @commands.command(name="eval")
+    @commands.is_owner()
+    async def eval(self, ctx, *, stmts):
+        stmts = stmts.strip("` ")
+        res = await eval_stmts(stmts, {
+            "bot": self.bot,
+            "ctx": ctx,
+        })
+        await ctx.send(f"```python\n{res!r}\n```", )
 
 
 bot.add_cog(Academy(bot))
