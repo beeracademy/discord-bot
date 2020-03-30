@@ -1,14 +1,16 @@
 import asyncio
 import logging
 import os
+from typing import Optional
 
 import aiohttp
 from aiohttp.client_exceptions import ClientResponseError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
-from db import Link, State, session_scope
+from db import Link, session_scope
 from discord import Game, utils
+from discord.channel import TextChannel
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -18,6 +20,13 @@ load_dotenv()
 
 GIT_COMMIT_HASH = os.environ["GIT_COMMIT_HASH"]
 GIT_COMMIT_URL = f"https://github.com/beeracademy/discord-bot/commit/{GIT_COMMIT_HASH}"
+
+if os.getenv("TEST_GUILD") == "1":
+    DISCORD_TOKEN = os.environ["DISCORD_TEST_TOKEN"]
+    DISCORD_GUILD = os.environ["DISCORD_TEST_GUILD"]
+else:
+    DISCORD_TOKEN = os.environ["DISCORD_TOKEN"]
+    DISCORD_GUILD = os.environ["DISCORD_GUILD"]
 
 bot = commands.Bot("!", case_insensitive=True)
 
@@ -43,42 +52,23 @@ class Academy(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.lock = asyncio.Lock()
-
-        with session_scope() as session:
-            try:
-                state = session.query(State).one()
-                self.current_game_id = state.followed_game
-                self.game_data = self.bot.loop.run_until_complete(
-                    self.get_game_data(self.current_game_id)
-                )
-
-                logging.info(f"Got game id from saved state: {self.current_game_id}.")
-            except (NoResultFound, ClientResponseError):
-                self.current_game_id = None
-                self.game_data = None
-                logging.info("No game id saved state.")
+        self.game_datas = {}
 
     async def update_status(self):
-        async with self.lock:
-            if self.current_game_id:
-                await self.bot.change_presence(
-                    activity=Game(
-                        name=f"Giving updates on https://academy.beer/games/{self.current_game_id}/"
-                    )
+        if self.game_datas:
+            await self.bot.change_presence(
+                activity=Game(
+                    f"{plural(len(self.game_datas), 'live game')}: {list(self.game_datas.keys())}"
                 )
-            else:
-                await self.bot.change_presence(
-                    activity=Game(name="Waiting for new players: https://academy.beer/")
-                )
+            )
+        else:
+            await self.bot.change_presence(
+                activity=Game(name="Waiting for new players: https://academy.beer/")
+            )
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.guild = utils.get(self.bot.guilds, name=os.environ["DISCORD_GUILD"])
-        self.channel = utils.get(
-            self.guild.channels, name=os.environ["DISCORD_CHANNEL"]
-        )
-
+        self.guild = utils.get(self.bot.guilds, DISCORD_GUILD)
         await self.update_status()
         logging.info(f"Connected as {self.bot.user}")
         self.bot.loop.create_task(self.background_task())
@@ -114,10 +104,47 @@ class Academy(commands.Cog):
     def level_info(self, player_stats):
         return f"To be on level they have to have drunk {plural(player_stats['full_beers'], 'full beer')} and {plural(player_stats['extra_sips'], 'sip')}."
 
-    async def send_info(self, game_data):
+    def get_channel_name(self, game_id):
+        return f"academy_{game_id}"
+
+    def get_game_progress(self, game_data):
+        cards = game_data["cards"]
+        chug_done = 1
+        if cards:
+            c = cards[-1]
+            if c["value"] == 14 and c["chug_duration_ms"] == None:
+                chug_done = 0
+
+        return (len(cards), chug_done)
+
+    async def get_game_channel(self, game_id):
+        channel_name = self.get_channel_name(game_id)
+        return utils.get(self.guild.text_channels, name=channel_name)
+
+    async def get_or_create_game_channel(self, game_id):
+        channel = await self.get_game_channel(game_id)
+        if not channel:
+            channel_name = self.get_channel_name(game_id)
+            user_str = ", ".join(
+                p["username"] for p in self.game_datas[game_id]["player_stats"]
+            )
+            channel = await self.guild.create_text_channel(
+                channel_name,
+                topic=f"Game with {user_str}: https://academy.beer/games/{game_id}/",
+            )
+            await channel.edit(position=0)
+
+        return channel
+
+    async def send_in_game_channel(self, game_id, message):
+        channel = await self.get_game_channel(game_id)
+        await channel.send(message)
+
+    async def post_game_update(self, game_data):
         player_stats = game_data["player_stats"]
         player_count = len(player_stats)
         card_count = len(game_data["cards"])
+        total_card_count = player_count * 13
         player_index = card_count % player_count
 
         previous_player_name = self.get_player_name(
@@ -127,25 +154,70 @@ class Academy(commands.Cog):
         player_name = self.get_player_name(current_player_stats)
 
         message = ""
+        is_ace = False
         if game_data["cards"]:
             card = game_data["cards"][-1]
-            message += f"{previous_player_name} just got a {card['value']}.\n\n"
 
-        message += f"Now it's {player_name}'s turn:\n" + self.level_info(
-            player_stats[player_index]
-        )
+            if card["value"] == 14:
+                is_ace = True
+                duration = card["chug_duration_ms"]
+                if duration == None:
+                    message += (
+                        f"{previous_player_name} just got an ace, so they have to chug!"
+                    )
+                else:
+                    message += f"{previous_player_name} just finished chugging with time {duration / 1000} seconds."
+            else:
+                message += f"{previous_player_name} just got a {card['value']}.\n\n"
 
-        await self.channel.send(message)
-
-    async def post_game_update(self, game_data):
-        player_count = len(game_data["player_stats"])
-        total_card_count = player_count * 13
-        if len(game_data["cards"]) == total_card_count:
-            await self.channel.send(
-                f"The game has finished, look at the stats at https://academy.beer/games/{self.current_game_id}/"
+        if not is_ace and card_count != total_card_count:
+            message += f"Now it's {player_name}'s turn:\n" + self.level_info(
+                player_stats[player_index]
             )
-        else:
-            await self.send_info(game_data)
+
+        await self.send_in_game_channel(game_data["id"], message)
+
+    async def update_game_datas(self):
+        async with aiohttp.ClientSession(
+            raise_for_status=True, timeout=self.TIMEOUT
+        ) as session:
+            while True:
+                try:
+                    async with session.get(
+                        f"https://academy.beer/api/games/live_games/"
+                    ) as response:
+                        game_ids = set(d["id"] for d in await response.json())
+                        break
+                except asyncio.TimeoutError:
+                    logging.info(
+                        "Failed to get list of live games, retrying in 1 second..."
+                    )
+                    await asyncio.sleep(1)
+
+        old_game_ids = set(self.game_datas.keys())
+
+        for game_id in game_ids:
+            old_data = self.game_datas.get(game_id)
+            new_data = await self.get_game_data(game_id)
+            self.game_datas[game_id] = new_data
+            if game_id not in old_game_ids:
+                logging.info(f"New game: {game_id}")
+                await self.get_or_create_game_channel(game_id)
+
+            if not old_data or self.get_game_progress(
+                old_data
+            ) != self.get_game_progress(new_data):
+                await self.post_game_update(new_data)
+
+        for game_id in list(self.game_datas.keys()):
+            if game_id not in game_ids:
+                logging.info(f"Game is done: {game_id}")
+                await self.send_in_game_channel(
+                    game_id,
+                    f"Game has now ended. See https://academy.beer/games/{game_id}/",
+                )
+                del self.game_datas[game_id]
+                # TODO: Delete channel?
 
     async def get_game_data(self, game_id):
         async with aiohttp.ClientSession(
@@ -173,52 +245,16 @@ class Academy(commands.Cog):
 
     async def background_task(self):
         while True:
-            if self.current_game_id:
-                try:
-                    new_game_data = await self.get_game_data(self.current_game_id)
-                except ClientResponseError:
-                    await self.channel.send(
-                        "Failed to get game data, unfollowing game."
-                    )
-                    await self.set_followed_game(None)
-
-                if len(new_game_data["cards"]) != len(self.game_data["cards"]):
-                    await self.post_game_update(new_game_data)
-
-                self.game_data = new_game_data
+            try:
+                await self.update_game_datas()
+            except ClientResponseError as e:
+                """await self.channel.send(
+                    "Failed to update game data."
+                )"""
+                logging.error(e)
+                pass
 
             await asyncio.sleep(1)
-
-    async def set_followed_game(self, game_id):
-        self.current_game_id = game_id
-        with session_scope() as session:
-            session.query(State).delete()
-            if self.current_game_id:
-                session.add(State(followed_game=self.current_game_id))
-
-        await self.update_status()
-
-    @commands.command(name="follow")
-    async def follow(self, ctx, game_id: int):
-        try:
-            self.game_data = await self.get_game_data(game_id)
-        except ClientResponseError:
-            await ctx.send("Couldn't get game data! Does the game exist?")
-            return
-
-        await self.set_followed_game(game_id)
-        await ctx.send(f"Now following game {self.current_game_id}.")
-        await self.post_game_update(self.game_data)
-
-    @commands.command(name="unfollow")
-    async def unfollow(self, ctx):
-        game_id = self.current_game_id
-        if game_id:
-            await self.set_followed_game(None)
-            self.game_data = None
-            await ctx.send(f"Unfollowed game {game_id}.")
-        else:
-            await ctx.send(f"Not currently following any game!")
 
     def set_linked_account(self, discord_id, academy_id):
         with session_scope() as session:
@@ -265,34 +301,60 @@ class Academy(commands.Cog):
     async def version(self, ctx):
         await ctx.send(f"I'm currently running the following version: {GIT_COMMIT_URL}")
 
+    async def get_game_data_from_ctx(self, ctx, game_id):
+        if game_id == None:
+            if isinstance(ctx.channel, TextChannel) and ctx.channel.guild == self.guild:
+                parts = ctx.channel.name.split("_")
+                if len(parts) == 2 and parts[0] == "academy":
+                    try:
+                        game_id = int(parts[1])
+                    except ValueError:
+                        pass
+
+        if game_id == None:
+            await ctx.send(
+                f"{ctx.author.mention} you either have to provide the game id as an argument or use the command in the associated chat."
+            )
+            return None
+
+        game_data = self.game_datas.get(game_id)
+        if not game_data:
+            await ctx.send(f"{ctx.author.mention} game doesn't seem to be live.")
+            return None
+
+        return game_data
+
     @commands.command(name="status")
-    async def status(self, ctx):
-        await self.post_game_update(self.game_data)
+    async def status(self, ctx, game_id: Optional[int]):
+        game_data = await self.get_game_data_from_ctx(ctx, game_id)
+        if game_data:
+            await self.post_game_update(game_data)
 
     @commands.command(name="level")
-    async def level(self, ctx):
-        if not self.current_game_id:
+    async def level(self, ctx, game_id: Optional[int]):
+        game_data = await self.get_game_data_from_ctx(ctx, game_id)
+        if not game_data:
+            return
+
+        game_id = game_data["id"]
+
+        academy_id = self.get_academy_id(ctx.author.id)
+        if academy_id == None:
             await ctx.send(
-                f"{ctx.author.mention} the bot isn't currently following a game.\nTry using !follow"
+                f"{ctx.author.mention} you need to `!link` your discord account with your academy account."
             )
             return
 
-        academy_id = self.get_academy_id(ctx.author.id)
-
-        player_stats = get_dict(self.game_data["player_stats"], id=academy_id)
+        player_stats = get_dict(game_data["player_stats"], id=academy_id)
         if player_stats:
             s = f"{ctx.author.mention}:\n"
             s += self.level_info(player_stats)
             await ctx.send(s)
         else:
             await ctx.send(
-                f"{ctx.author.mention} doesn't seem to be in game {self.current_game_id}.\nTry linking your accounts with !link"
+                f"{ctx.author.mention} doesn't seem to be in game {game_id}."
             )
-
-    @commands.command(name="debug")
-    async def debug(self, ctx):
-        await ctx.send(f"Current game id: {self.current_game_id}")
 
 
 bot.add_cog(Academy(bot))
-bot.run(os.environ["DISCORD_TOKEN"])
+bot.run(DISCORD_TOKEN)

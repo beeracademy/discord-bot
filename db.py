@@ -28,13 +28,6 @@ def session_scope():
         session.close()
 
 
-class State(Base):
-    __tablename__ = "state"
-
-    id = Column(Integer, primary_key=True)
-    followed_game = Column(Integer)
-
-
 class Link(Base):
     __tablename__ = "link"
 
