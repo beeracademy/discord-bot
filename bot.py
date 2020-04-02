@@ -193,7 +193,7 @@ class Academy(commands.Cog):
                         f"{previous_player_name} just got an ace, so they have to chug!"
                     )
                 else:
-                    message += f"{previous_player_name} just finished chugging with time {duration / 1000} seconds."
+                    message += f"{previous_player_name} just finished chugging with time {duration / 1000} seconds.\n\n"
             else:
                 message += f"{previous_player_name} just got a {card['value']}.\n\n"
 
