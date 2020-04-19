@@ -30,6 +30,7 @@ else:
     DISCORD_GUILD = os.environ["DISCORD_GUILD"]
 
 
+MAX_FINISHED_GAMES = 10
 MAX_DISCORD_MESSAGE_LENGTH = 2000
 
 bot = commands.Bot("!", case_insensitive=True)
@@ -247,6 +248,11 @@ class Academy(commands.Cog):
                 del self.game_datas[game_id]
                 channel = await self.get_game_channel(game_id)
                 await channel.edit(category=self.finished_category)
+
+        finished_channels = self.finished_category.channels
+        if len(finished_channels) > MAX_FINISHED_GAMES:
+            for c in sorted(finished_channels, key=lambda c: -c.name)[10:]:
+                await c.delete()
 
         if game_ids != old_game_ids:
             await self.update_status()
