@@ -84,8 +84,10 @@ class Academy(commands.Cog):
         self.guild = utils.get(self.bot.guilds, name=DISCORD_GUILD)
         self.live_category = utils.get(self.guild.categories, name="Live Games")
         self.finished_category = utils.get(self.guild.categories, name="Finished Games")
+        self.bot_channel = utils.get(self.guild.channels, name="bot")
         await self.update_status()
         logging.info(f"Connected as {self.bot.user}")
+        await self.bot_channel.send(f"Just started up, running version: {GIT_COMMIT_URL}")
 
     async def update_status(self):
         if self.game_datas:
