@@ -64,4 +64,5 @@ async def eval_stmts(stmts, env=None):
 
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
