@@ -75,6 +75,7 @@ class Academy(commands.Cog):
         self.bot = bot
         self.game_datas = {}
         self.update_game_datas.start()
+        self.first_on_ready = True
 
     def cog_unload(self):
         self.update_game_datas.cancel()
@@ -87,7 +88,9 @@ class Academy(commands.Cog):
         self.bot_channel = utils.get(self.guild.channels, name="bot")
         await self.update_status()
         logging.info(f"Connected as {self.bot.user}")
-        await self.bot_channel.send(f"Just started up, running version: {GIT_COMMIT_URL}")
+        if self.first_on_ready:
+            await self.bot_channel.send(f"Just started up, running version: {GIT_COMMIT_URL}")
+            self.first_on_ready = False
 
     async def update_status(self):
         if self.game_datas:
