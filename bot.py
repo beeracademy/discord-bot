@@ -251,7 +251,7 @@ class Academy(commands.Cog):
 
         finished_channels = self.finished_category.channels
         if len(finished_channels) > MAX_FINISHED_GAMES:
-            for c in sorted(finished_channels, key=lambda c: -c.name)[10:]:
+            for c in sorted(finished_channels, key=lambda c: c.name, reverse=True)[10:]:
                 await c.delete()
 
         if game_ids != old_game_ids:
