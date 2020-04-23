@@ -3,8 +3,6 @@ import logging
 import os
 from typing import Optional
 
-from texttable import Texttable
-
 import aiohttp
 from db import Link, session_scope
 from discord import Game, utils
@@ -14,6 +12,7 @@ from dotenv import load_dotenv
 from eval_stmts import eval_stmts
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
+from texttable import Texttable
 
 logging.basicConfig(level=logging.INFO)
 
