@@ -42,11 +42,11 @@ MAX_DISCORD_MESSAGE_LENGTH = 2000
 bot = commands.Bot("!", case_insensitive=True)
 
 
-def get_max_font(font_name, text, max_size):
+def get_max_font(image_draw, font_name, text, max_size):
     size = 0
     while True:
         fnt = ImageFont.truetype(font_name, size=size)
-        text_size = fnt.getsize(text)
+        text_size = image_draw.textsize(text, fnt)
         if text_size[0] > max_size[0] or text_size[1] > max_size[1]:
             break
         size += 1
@@ -482,8 +482,9 @@ class Academy(commands.Cog):
         text = text.strip()
 
         img = Image.open(FURA_TEMPLATE)
-        fnt = get_max_font("DejaVuSans.ttf", text, FURA_TEMPLATE_SIZE)
         d = ImageDraw.Draw(img)
+        fnt = get_max_font(d, "DejaVuSans.ttf", text, FURA_TEMPLATE_SIZE)
+        fnt.getsize(text)
         d.text(FURA_TEMPLATE_OFFSET, text, font=fnt, fill=(0, 0, 0))
 
         with io.BytesIO() as f:
