@@ -1,22 +1,29 @@
 import asyncio
+import io
 import logging
 import os
 from typing import Optional
 
 import aiohttp
-from db import Link, session_scope
-from discord import Game, utils
+from discord import File, Game, utils
 from discord.channel import TextChannel
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
-from eval_stmts import eval_stmts
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from texttable import Texttable
 
+from db import Link, session_scope
+from eval_stmts import eval_stmts
+from PIL import Image, ImageDraw, ImageFont
+
 logging.basicConfig(level=logging.INFO)
 
 load_dotenv()
+
+FURA_TEMPLATE = "fura_template.png"
+FURA_TEMPLATE_OFFSET = (100, 200)
+FURA_TEMPLATE_SIZE = (250, 50)
 
 GIT_COMMIT_HASH = os.environ["GIT_COMMIT_HASH"]
 GIT_COMMIT_URL = f"https://github.com/beeracademy/discord-bot/commit/{GIT_COMMIT_HASH}"
@@ -33,6 +40,18 @@ MAX_FINISHED_GAMES = 10
 MAX_DISCORD_MESSAGE_LENGTH = 2000
 
 bot = commands.Bot("!", case_insensitive=True)
+
+
+def get_max_font(font_name, text, max_size):
+    size = 0
+    while True:
+        fnt = ImageFont.truetype(font_name, size=size)
+        text_size = fnt.getsize(text)
+        if text_size[0] > max_size[0] or text_size[1] > max_size[1]:
+            break
+        size += 1
+
+    return ImageFont.truetype(font_name, size=size - 1)
 
 
 def get_dict(l, **kwargs):
@@ -457,6 +476,21 @@ class Academy(commands.Cog):
             message = prefix + message[:new_length] + suffix
 
         await ctx.send(message)
+
+    @commands.command(name="fura")
+    @commands.is_owner()
+    async def fura(self, ctx, *, text):
+        text = text.strip()
+
+        img = Image.open(FURA_TEMPLATE)
+        fnt = get_max_font("DejaVuSans.ttf", text, FURA_TEMPLATE_SIZE)
+        d = ImageDraw.Draw(img)
+        d.text(FURA_TEMPLATE_OFFSET, text, font=fnt, fill=(0, 0, 0))
+
+        with io.BytesIO() as f:
+            img.save(f, format="png")
+            f.seek(0)
+            await ctx.send(file=File(f, "fura.png"))
 
 
 bot.add_cog(Academy(bot))

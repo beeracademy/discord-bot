@@ -2,3 +2,4 @@ discord.py[voice]
 python-dotenv
 sqlalchemy
 texttable
+Pillow
