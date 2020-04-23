@@ -484,8 +484,14 @@ class Academy(commands.Cog):
         img = Image.open(FURA_TEMPLATE)
         d = ImageDraw.Draw(img)
         fnt = get_max_font(d, "DejaVuSans.ttf", text, FURA_TEMPLATE_SIZE)
-        fnt.getsize(text)
-        d.text(FURA_TEMPLATE_OFFSET, text, font=fnt, fill=(0, 0, 0))
+        size = d.textsize(text, fnt)
+        offset = [
+            template_offset + (template_size - text_size) // 2
+            for text_size, template_size, template_offset in zip(
+                size, FURA_TEMPLATE_SIZE, FURA_TEMPLATE_OFFSET
+            )
+        ]
+        d.text(offset, text, font=fnt, fill=(0, 0, 0))
 
         with io.BytesIO() as f:
             img.save(f, format="png")
