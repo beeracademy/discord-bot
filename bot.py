@@ -9,13 +9,13 @@ from discord import File, Game, utils
 from discord.channel import TextChannel
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
+from PIL import Image, ImageDraw, ImageFont
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from texttable import Texttable
 
 from db import Link, session_scope
 from eval_stmts import eval_stmts
-from PIL import Image, ImageDraw, ImageFont
 
 logging.basicConfig(level=logging.INFO)
 
@@ -458,10 +458,10 @@ class Academy(commands.Cog):
     async def eval(self, ctx, *, stmts):
         stmts = stmts.strip().strip("`")
         if not stmts:
-            await ctx.send("After stripping \`'s, stmts can't be empty.")
+            await ctx.send("After stripping `'s, stmts can't be empty.")
             return
 
-        res = await eval_stmts(stmts, {"academy": self, "ctx": ctx,})
+        res = await eval_stmts(stmts, {"academy": self, "ctx": ctx})
         escaped = code_block_escape(repr(res))
         message = f"```python\n{escaped}\n```"
         if len(message) > MAX_DISCORD_MESSAGE_LENGTH:
@@ -478,7 +478,6 @@ class Academy(commands.Cog):
         await ctx.send(message)
 
     @commands.command(name="fura")
-    @commands.is_owner()
     async def fura(self, ctx, *, text):
         text = text.strip()
 
