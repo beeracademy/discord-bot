@@ -76,6 +76,7 @@ class Academy(commands.Cog):
         self.game_datas = {}
         self.update_game_datas.start()
         self.first_on_ready = True
+        self.typing_context = None
 
     def cog_unload(self):
         self.update_game_datas.cancel()
@@ -109,6 +110,13 @@ class Academy(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         await ctx.send(f"Got an error: {error}")
+
+    async def cog_before_invoke(self, ctx):
+        self.typing_context = await ctx.typing().__aenter__()
+
+    async def cog_after_invoke(self, ctx):
+        if self.typing_context:
+            await self.typing_context.__aexit__(None, None, None)
 
     def get_academy_id(self, discord_id):
         with session_scope() as session:
