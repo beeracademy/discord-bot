@@ -89,7 +89,9 @@ class Academy(commands.Cog):
         await self.update_status()
         logging.info(f"Connected as {self.bot.user}")
         if self.first_on_ready:
-            await self.bot_channel.send(f"Just started up, running version: {GIT_COMMIT_URL}")
+            await self.bot_channel.send(
+                f"Just started up, running version: {GIT_COMMIT_URL}"
+            )
             self.first_on_ready = False
 
     async def update_status(self):
@@ -251,8 +253,13 @@ class Academy(commands.Cog):
                     f"Game has now ended.\nDescription: {final_data['description']}\nSee https://academy.beer/games/{game_id}/ for more info.",
                 )
                 del self.game_datas[game_id]
-                channel = await self.get_game_channel(game_id)
-                await channel.edit(category=self.finished_category)
+
+        live_channels = {
+            await self.get_game_channel(game_id) for game_id in self.game_datas.keys()
+        }
+        for c in self.live_category.channels:
+            if c not in live_channels:
+                await c.edit(category=self.finished_category)
 
         finished_channels = self.finished_category.channels
         if len(finished_channels) > MAX_FINISHED_GAMES:
