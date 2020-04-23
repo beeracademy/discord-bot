@@ -2,6 +2,7 @@ import asyncio
 import io
 import logging
 import os
+from collections import defaultdict
 from typing import Optional
 
 import aiohttp
@@ -94,7 +95,7 @@ class Academy(commands.Cog):
         self.game_datas = {}
         self.update_game_datas.start()
         self.first_on_ready = True
-        self.typing_context = None
+        self.typing_context = defaultdict(list)
 
     def cog_unload(self):
         self.update_game_datas.cancel()
@@ -130,11 +131,11 @@ class Academy(commands.Cog):
         await ctx.send(f"Got an error: {error}")
 
     async def cog_before_invoke(self, ctx):
-        self.typing_context = await ctx.typing().__aenter__()
+        self.typing_context[ctx].append(await ctx.typing().__aenter__())
 
     async def cog_after_invoke(self, ctx):
-        if self.typing_context:
-            await self.typing_context.__aexit__(None, None, None)
+        typing_context = self.typing_context[ctx].pop()
+        await typing_context.__aexit__(None, None, None)
 
     def get_academy_id(self, discord_id):
         with session_scope() as session:
