@@ -7,13 +7,16 @@ Has the following commands:
 
 ```
 Academy:
-  follow
+  eval
+  level
   link
   status
+  table
   test
-  unfollow
+  unlink
+  version
 No Category:
-  help     Shows this message
+  help    Shows this message
 
 Type !help command for more info on a command.
 You can also type !help category for more info on a category.
