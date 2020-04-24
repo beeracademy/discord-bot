@@ -2,7 +2,7 @@ import asyncio
 import io
 import logging
 import os
-from collections import defaultdict
+from functools import wraps
 from typing import Optional
 
 import aiohttp
@@ -87,6 +87,18 @@ def code_block_escape(s):
     return ns
 
 
+def typing_command(*cargs, **ckwargs):
+    def inner(f):
+        @wraps(f)
+        async def wrapper(self, ctx, *args, **kwargs):
+            async with ctx.typing():
+                await f(self, ctx, *args, **kwargs)
+
+        return commands.command(*cargs, **ckwargs)(wrapper)
+
+    return inner
+
+
 class Academy(commands.Cog):
     TIMEOUT = aiohttp.ClientTimeout(total=5)
 
@@ -95,7 +107,6 @@ class Academy(commands.Cog):
         self.game_datas = {}
         self.update_game_datas.start()
         self.first_on_ready = True
-        self.typing_context = defaultdict(list)
 
     def cog_unload(self):
         self.update_game_datas.cancel()
@@ -129,13 +140,6 @@ class Academy(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         await ctx.send(f"Got an error: {error}")
-
-    async def cog_before_invoke(self, ctx):
-        self.typing_context[ctx].append(await ctx.typing().__aenter__())
-
-    async def cog_after_invoke(self, ctx):
-        typing_context = self.typing_context[ctx].pop()
-        await typing_context.__aexit__(None, None, None)
 
     def get_academy_id(self, discord_id):
         with session_scope() as session:
@@ -330,7 +334,7 @@ class Academy(commands.Cog):
             if academy_id:
                 session.add(Link(discord_id=discord_id, academy_id=academy_id))
 
-    @commands.command(name="link")
+    @typing_command(name="link")
     async def link(self, ctx, academy_id: int):
         try:
             username = await self.get_username(academy_id)
@@ -356,18 +360,18 @@ class Academy(commands.Cog):
             f"{ctx.author.mention} is now linked with {username} on academy."
         )
 
-    @commands.command(name="unlink", aliases=["ul"])
+    @typing_command(name="unlink", aliases=["ul"])
     async def unlink(self, ctx):
         self.set_linked_account(ctx.author.id, None)
         await ctx.send(
             f"{ctx.author.mention} is now no longer linked to any academy user."
         )
 
-    @commands.command(name="test")
+    @typing_command(name="test")
     async def test(self, ctx):
         await ctx.send(f"Test {ctx.author.mention}")
 
-    @commands.command(name="version", aliases=["v"])
+    @typing_command(name="version", aliases=["v"])
     async def version(self, ctx):
         await ctx.send(f"I'm currently running the following version: {GIT_COMMIT_URL}")
 
@@ -394,13 +398,13 @@ class Academy(commands.Cog):
 
         return game_data
 
-    @commands.command(name="status", aliases=["s"])
+    @typing_command(name="status", aliases=["s"])
     async def status(self, ctx, game_id: Optional[int]):
         game_data = await self.get_game_data_from_ctx(ctx, game_id)
         if game_data:
             await self.post_game_update(game_data)
 
-    @commands.command(name="level", aliases=["l"])
+    @typing_command(name="level", aliases=["l"])
     async def level(self, ctx, game_id: Optional[int]):
         game_data = await self.get_game_data_from_ctx(ctx, game_id)
         if not game_data:
@@ -425,7 +429,7 @@ class Academy(commands.Cog):
                 f"{ctx.author.mention} doesn't seem to be in game {game_id}."
             )
 
-    @commands.command(name="table", aliases=["t"])
+    @typing_command(name="table", aliases=["t"])
     async def table(self, ctx, game_id: Optional[int]):
         game_data = await self.get_game_data_from_ctx(ctx, game_id)
         if not game_data:
@@ -454,7 +458,7 @@ class Academy(commands.Cog):
 
         await ctx.send(f"```\n{code_block_escape(t.draw())}\n```")
 
-    @commands.command(name="eval")
+    @typing_command(name="eval")
     @commands.is_owner()
     async def eval(self, ctx, *, stmts):
         stmts = stmts.strip().strip("`")
@@ -478,7 +482,7 @@ class Academy(commands.Cog):
 
         await ctx.send(message)
 
-    @commands.command(name="fura")
+    @typing_command(name="fura")
     async def fura(self, ctx, *, text):
         text = text.strip()
 
