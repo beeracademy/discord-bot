@@ -505,4 +505,6 @@ class Academy(commands.Cog):
 
 
 bot.add_cog(Academy(bot))
-bot.run(DISCORD_TOKEN)
+
+if __name__ == "__main__":
+    bot.run(DISCORD_TOKEN)
