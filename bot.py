@@ -52,7 +52,11 @@ def get_max_font(image_draw, font_name, text, max_size):
             break
         size += 1
 
-    return ImageFont.truetype(font_name, size=size - 1)
+    # Ensure size is a nonnegative integer
+    if size > 0:
+        size -= 1
+
+    return ImageFont.truetype(font_name, size=size)
 
 
 def get_dict(l, **kwargs):
