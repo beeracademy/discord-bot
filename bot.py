@@ -25,6 +25,7 @@ load_dotenv()
 FURA_TEMPLATE = "fura_template.png"
 FURA_TEMPLATE_OFFSET = (100, 200)
 FURA_TEMPLATE_SIZE = (250, 50)
+FURA_ID = int(os.environ["FURA_ID"])
 
 GIT_COMMIT_HASH = os.environ["GIT_COMMIT_HASH"]
 GIT_COMMIT_URL = f"https://github.com/beeracademy/discord-bot/commit/{GIT_COMMIT_HASH}"
@@ -506,6 +507,11 @@ class Academy(commands.Cog):
             img.save(f, format="png")
             f.seek(0)
             await ctx.send(file=File(f, "fura.png"))
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author.id == FURA_ID:
+            await self.fura(message.channel, text=message.content)
 
 
 bot.add_cog(Academy(bot))
