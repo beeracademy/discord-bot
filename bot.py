@@ -2,6 +2,7 @@ import asyncio
 import io
 import logging
 import os
+import random
 from functools import wraps
 from typing import Optional
 
@@ -42,6 +43,10 @@ MAX_FINISHED_GAMES = 10
 MAX_DISCORD_MESSAGE_LENGTH = 2000
 
 bot = commands.Bot("!", case_insensitive=True)
+
+
+def div_ceil(a, b):
+    return (a - 1) // b + 1
 
 
 def get_max_font(image_draw, font_name, text, max_size):
@@ -507,6 +512,34 @@ class Academy(commands.Cog):
             img.save(f, format="png")
             f.seek(0)
             await ctx.send(file=File(f, "fura.png"))
+
+    @typing_command(name="distribute", aliases=["d"])
+    async def distribute(self, ctx, *players):
+        n = len(players)
+        sets = []
+        players_left = set(players)
+        games = div_ceil(n, 6)
+
+        lowest_count = n // games
+        highest_count = lowest_count + 1
+        number_of_highest_count = n - lowest_count * games
+        for _ in range(games):
+            if number_of_highest_count > 0:
+                c = highest_count
+                number_of_highest_count -= 1
+            else:
+                c = lowest_count
+
+            s = set(random.sample(players_left, c))
+            sets.append(s)
+
+            players_left -= s
+
+        message = ""
+        for i in range(games):
+            message += f"Game {i + 1}: {', '.join(sets[i])}\n"
+
+        await ctx.send(message)
 
     @commands.Cog.listener()
     async def on_message(self, message):
