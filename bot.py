@@ -403,8 +403,7 @@ class Academy(commands.Cog):
 
         game_data = self.game_datas.get(game_id)
         if not game_data:
-            await ctx.send(f"{ctx.author.mention} game doesn't seem to be live.")
-            return None
+            game_data = await self.get_game_data(game_id)
 
         return game_data
 
