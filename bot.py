@@ -45,6 +45,64 @@ MAX_DISCORD_MESSAGE_LENGTH = 2000
 bot = commands.Bot("!", case_insensitive=True)
 
 
+def partition_solve(l, max_size):
+    """
+    Given a list of integers and a maximum bucket size,
+    returns a partitioning of the list into k different buckets
+    with the sum of each bucket being less or equal to the maximum size.
+    The partioning is done to first minimize k and then minize
+    the size difference between the smallest and biggest buckets.
+
+    >>> f = lambda l, max_size: sorted(sorted(l) for l in partition_solve(l, max_size))
+    >>> f([1, 2, 3], 3)
+    [[1, 2], [3]]
+    >>> f([5] * 3 + [4] * 5, 18)
+    [[4, 4, 4, 5], [4, 4, 5, 5]]
+    """
+
+    assert 0 <= min(l)
+    assert max(l) <= max_size
+
+    n = len(l)
+
+    best = (n + 1, 0, [])
+
+    def aux(i, space_left, assignments):
+        nonlocal best
+
+        if i == n:
+            key = (len(space_left), max(space_left) - min(space_left))
+            if key < best[:2]:
+                best = key + (list(assignments),)
+            return
+
+        best_possible = (len(space_left), 0)
+        if best_possible >= best[:2]:
+            return
+
+        for j in range(len(space_left) + 1):
+            if j == len(space_left):
+                space_left.append(max_size)
+
+            if space_left[j] >= l[i]:
+                space_left[j] -= l[i]
+                assignments.append(j)
+                aux(i + 1, space_left, assignments)
+                assignments.pop()
+                space_left[j] += l[i]
+
+        space_left.pop()
+
+    aux(0, [], [])
+
+    k, _, assignments = best
+    res = [[] for _ in range(k)]
+    for i, j in enumerate(assignments):
+        res[j].append(l[i])
+
+    return res
+
+
 def div_ceil(a, b):
     return (a - 1) // b + 1
 
@@ -515,28 +573,37 @@ class Academy(commands.Cog):
     @typing_command(name="distribute", aliases=["d"])
     async def distribute(self, ctx, *players):
         n = len(players)
-        sets = []
-        players_left = set(players)
-        games = div_ceil(n, 6)
 
-        lowest_count = n // games
-        highest_count = lowest_count + 1
-        number_of_highest_count = n - lowest_count * games
-        for _ in range(games):
-            if number_of_highest_count > 0:
-                c = highest_count
-                number_of_highest_count -= 1
-            else:
-                c = lowest_count
+        groups = {}
+        group_sizes = []
+        for p in players:
+            group = p.split("=")
+            groups.setdefault(len(group), []).append(group)
+            group_sizes.append(len(group))
 
-            s = set(random.sample(players_left, c))
-            sets.append(s)
+        max_size = 6
+        if max(group_sizes) > max_size:
+            await ctx.send(f"Groups can't have size over {max_size}")
+            return
 
-            players_left -= s
+        game_group_sizes = partition_solve(group_sizes, 6)
+        n = len(game_group_sizes)
 
-        message = ""
-        for i in range(games):
-            message += f"Game {i + 1}: {', '.join(sets[i])}\n"
+        for l in groups.values():
+            random.shuffle(l)
+
+        game_groups = []
+        for group_sizes in game_group_sizes:
+            game_group = []
+            for k in group_sizes:
+                game_group.append(groups[k].pop())
+
+            game_groups.append(game_group)
+
+        message = f"Partitioned players into {n} games:\n"
+        for i, game_group in enumerate(game_groups):
+            players = ", ".join([p for group in game_group for p in group])
+            message += f"Game {i + 1}: {players}\n"
 
         await ctx.send(message)
 
