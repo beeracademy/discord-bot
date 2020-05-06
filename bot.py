@@ -53,6 +53,8 @@ def partition_solve(l, max_size):
     The partioning is done to first minimize k and then minize
     the size difference between the smallest and biggest buckets.
 
+    Note that this is a generalization of the multi-way partition problem.
+
     >>> f = lambda l, max_size: sorted(sorted(l) for l in partition_solve(l, max_size))
     >>> f([1, 2, 3], 3)
     [[1, 2], [3]]
