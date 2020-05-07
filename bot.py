@@ -183,7 +183,7 @@ def typing_command(*cargs, **ckwargs):
 
 
 class Academy(commands.Cog):
-    TIMEOUT = aiohttp.ClientTimeout(total=5)
+    AIOHTTP_TIMEOUT = aiohttp.ClientTimeout(total=5)
 
     def __init__(self, bot):
         self.bot = bot
@@ -328,7 +328,7 @@ class Academy(commands.Cog):
     @tasks.loop(seconds=1)
     async def update_game_datas(self):
         async with aiohttp.ClientSession(
-            raise_for_status=True, timeout=self.TIMEOUT
+            raise_for_status=True, timeout=self.AIOHTTP_TIMEOUT
         ) as session:
             while True:
                 try:
@@ -389,7 +389,7 @@ class Academy(commands.Cog):
 
     async def get_game_data(self, game_id):
         async with aiohttp.ClientSession(
-            raise_for_status=True, timeout=self.TIMEOUT
+            raise_for_status=True, timeout=self.AIOHTTP_TIMEOUT
         ) as session:
             while True:
                 try:
@@ -404,7 +404,7 @@ class Academy(commands.Cog):
 
     async def get_username(self, user_id):
         async with aiohttp.ClientSession(
-            raise_for_status=True, timeout=self.TIMEOUT
+            raise_for_status=True, timeout=self.AIOHTTP_TIMEOUT
         ) as session:
             async with session.get(
                 f"https://academy.beer/api/users/{user_id}/"
