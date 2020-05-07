@@ -73,9 +73,10 @@ def partition_solve(l, max_size):
     assert max(l) <= max_size
 
     n = len(l)
+    total = sum(l)
 
     best = (n + 1, 0, [])
-    global_best_possible = (div_ceil(n, max_size), int(n % max_size > 0))
+    global_best_possible = (div_ceil(total, max_size), int(total % max_size > 0))
 
     def aux(i, space_left, assignments):
         nonlocal best
