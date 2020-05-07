@@ -1,5 +1,8 @@
 FROM python:3.8
 
+# For pyppeteer
+RUN apt-get update && apt-get install -y chromium && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY requirements.txt /app/
