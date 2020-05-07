@@ -68,18 +68,24 @@ def partition_solve(l, max_size):
     n = len(l)
 
     best = (n + 1, 0, [])
+    global_best_possible = (div_ceil(n, max_size), int(n % max_size > 0))
 
     def aux(i, space_left, assignments):
         nonlocal best
 
+        best_key = best[:2]
+
         if i == n:
             key = (len(space_left), max(space_left) - min(space_left))
-            if key < best[:2]:
+            if key < best_key:
                 best = key + (list(assignments),)
             return
 
+        if best_key == global_best_possible:
+            return
+
         best_possible = (len(space_left), 0)
-        if best_possible >= best[:2]:
+        if best_possible >= best_key:
             return
 
         for j in range(len(space_left) + 1):
