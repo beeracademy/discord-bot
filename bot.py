@@ -41,6 +41,10 @@ else:
     DISCORD_GUILD = os.environ["DISCORD_GUILD"]
 
 
+AU_ID = os.environ["AU_ID"]
+AU_PASSWORD = os.environ["AU_PASSWORD"]
+
+
 MAX_FINISHED_GAMES = 10
 MAX_DISCORD_MESSAGE_LENGTH = 2000
 
@@ -637,7 +641,7 @@ class Academy(commands.Cog):
 
     @typing_command(name="zoom", aliases=["z"])
     async def zoom(self, ctx):
-        join_url = await zoom.generate_join_url()
+        join_url = await zoom.generate_join_url(AU_ID, AU_PASSWORD)
         await ctx.send(f"Generated new zoom meeting: {join_url}")
 
     @commands.Cog.listener()

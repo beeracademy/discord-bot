@@ -22,13 +22,13 @@ async def wait_for_url(page, url):
         await page.waitForNavigation()
 
 
-async def generate_join_url():
+async def generate_join_url(username, password):
     browser = await launch(headless=True, args=["--no-sandbox"])
     page = await browser.newPage()
     await page.goto("https://aarhusuniversity.zoom.us/signin")
 
-    await set_value(page, "#username", "au522953")
-    await set_value(page, "#password", "***REMOVED***")
+    await set_value(page, "#username", username)
+    await set_value(page, "#password", password)
     await page.click("input[type=submit]")
 
     await wait_for_url(page, "https://aarhusuniversity.zoom.us/profile")
@@ -52,4 +52,5 @@ async def generate_join_url():
 
 
 if __name__ == "__main__":
-    print(asyncio.run(generate_join_url()))
+    import sys
+    print(asyncio.run(generate_join_url(*sys.argv[1:])))
