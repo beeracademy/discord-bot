@@ -49,3 +49,7 @@ async def generate_join_url():
     await browser.close()
 
     return join_url
+
+
+if __name__ == "__main__":
+    print(asyncio.run(generate_join_url()))
