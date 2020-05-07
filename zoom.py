@@ -23,7 +23,7 @@ async def wait_for_url(page, url):
 
 
 async def generate_join_url():
-    browser = await launch()
+    browser = await launch(headless=True, args=["--no-sandbox"])
     page = await browser.newPage()
     await page.goto("https://aarhusuniversity.zoom.us/signin")
 
