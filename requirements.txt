@@ -5,6 +5,7 @@
 #    pip-compile
 #
 aiohttp==3.6.2            # via discord.py
+appdirs==1.4.3            # via pyppeteer2
 async-timeout==3.0.1      # via aiohttp
 attrs==19.3.0             # via aiohttp
 cffi==1.14.0              # via pynacl
@@ -14,11 +15,15 @@ idna==2.9                 # via yarl
 multidict==4.7.5          # via aiohttp, yarl
 pillow==7.1.1             # via -r requirements.in
 pycparser==2.20           # via cffi
+pyee==7.0.1               # via pyppeteer2
 pynacl==1.3.0             # via discord.py
+pyppeteer2==0.2.2         # via -r requirements.in
 python-dotenv==0.13.0     # via -r requirements.in
 six==1.14.0               # via pynacl
 sqlalchemy==1.3.16        # via -r requirements.in
 texttable==1.6.2          # via -r requirements.in
 timeout-decorator==0.4.1  # via -r requirements.in
-websockets==8.1           # via discord.py
+tqdm==4.46.0              # via pyppeteer2
+urllib3==1.25.9           # via pyppeteer2
+websockets==8.1           # via discord.py, pyppeteer2
 yarl==1.4.2               # via aiohttp

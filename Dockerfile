@@ -5,6 +5,8 @@ WORKDIR /app
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
+RUN pyppeteer-install
+
 COPY . /app
 
 ARG GIT_COMMIT_HASH

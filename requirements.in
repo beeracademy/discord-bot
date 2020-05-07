@@ -4,3 +4,4 @@ sqlalchemy
 texttable
 Pillow
 timeout-decorator
+pyppeteer2

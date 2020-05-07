@@ -17,6 +17,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from texttable import Texttable
 
+import zoom
 from db import Link, session_scope
 from eval_stmts import eval_stmts
 
@@ -633,6 +634,11 @@ class Academy(commands.Cog):
             message += f"Game {i + 1}: {players}\n"
 
         await ctx.send(message)
+
+    @typing_command(name="zoom", aliases=["z"])
+    async def zoom(self, ctx):
+        join_url = await zoom.generate_join_url()
+        await ctx.send(f"Generated new zoom meeting: {join_url}")
 
     @commands.Cog.listener()
     async def on_message(self, message):
