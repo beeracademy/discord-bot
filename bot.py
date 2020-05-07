@@ -7,6 +7,7 @@ from functools import wraps
 from typing import Optional
 
 import aiohttp
+import timeout_decorator
 from discord import File, Game, utils
 from discord.channel import TextChannel
 from discord.ext import commands, tasks
@@ -43,6 +44,12 @@ MAX_FINISHED_GAMES = 10
 MAX_DISCORD_MESSAGE_LENGTH = 2000
 
 bot = commands.Bot("!", case_insensitive=True)
+
+
+def run_with_timeout(f, fargs=[], fkwargs={}, *args, **kwargs):
+    return timeout_decorator.timeout(*args, timeout_exception=TimeoutError, **kwargs)(
+        f
+    )(*fargs, **fkwargs)
 
 
 def partition_solve(l, max_size):
@@ -580,6 +587,8 @@ class Academy(commands.Cog):
 
     @typing_command(name="distribute", aliases=["d"])
     async def distribute(self, ctx, *players):
+        TIMEOUT = 10
+
         n = len(players)
 
         groups = {}
@@ -594,7 +603,16 @@ class Academy(commands.Cog):
             await ctx.send(f"Groups can't have size over {max_size}")
             return
 
-        game_group_sizes = partition_solve(group_sizes, 6)
+        try:
+            game_group_sizes = run_with_timeout(
+                partition_solve, [group_sizes, 6], seconds=TIMEOUT,
+            )
+        except TimeoutError:
+            await ctx.send(
+                f"Timed out trying to find optimal solution after {TIMEOUT} seconds"
+            )
+            return
+
         n = len(game_group_sizes)
 
         for l in groups.values():

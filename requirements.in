@@ -3,3 +3,4 @@ python-dotenv
 sqlalchemy
 texttable
 Pillow
+timeout-decorator
