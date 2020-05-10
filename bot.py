@@ -195,6 +195,7 @@ class Academy(commands.Cog):
         self.game_datas = {}
         self.update_game_datas.start()
         self.first_on_ready = True
+        self.should_restart = False
 
     def cog_unload(self):
         self.update_game_datas.cancel()
@@ -646,6 +647,7 @@ class Academy(commands.Cog):
     @commands.command(name="restart")
     @commands.is_owner()
     async def restart(self, ctx):
+        self.should_restart = True
         await ctx.send("Restarting...")
         await self.bot.change_presence(activity=Game(name="Restarting..."))
         await self.bot.close()
@@ -658,17 +660,19 @@ class Academy(commands.Cog):
 
 def init_bot():
     bot = commands.Bot("!", case_insensitive=True)
-    bot.add_cog(Academy(bot))
-    return bot
+    academy = Academy(bot)
+    bot.add_cog(academy)
+    return academy
 
 
-async def main():
-    bot = init_bot()
-    await bot.start(DISCORD_TOKEN)
+def main():
+    academy = init_bot()
+    academy.bot.run(DISCORD_TOKEN)
 
-    print("Restarting...")
-    os.execvp("python", ["python", *sys.argv])
+    if academy.should_restart:
+        print("Restarting...")
+        os.execvp("python", ["python", *sys.argv])
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
