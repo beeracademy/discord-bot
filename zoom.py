@@ -53,4 +53,5 @@ async def generate_join_url(username, password):
 
 if __name__ == "__main__":
     import sys
+
     print(asyncio.run(generate_join_url(*sys.argv[1:])))
