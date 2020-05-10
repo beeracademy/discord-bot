@@ -3,6 +3,7 @@ import io
 import logging
 import os
 import random
+import sys
 from functools import wraps
 from typing import Optional
 
@@ -47,8 +48,6 @@ AU_PASSWORD = os.environ["AU_PASSWORD"]
 
 MAX_FINISHED_GAMES = 10
 MAX_DISCORD_MESSAGE_LENGTH = 2000
-
-bot = commands.Bot("!", case_insensitive=True)
 
 
 def run_with_timeout(f, fargs=[], fkwargs={}, *args, **kwargs):
@@ -644,13 +643,32 @@ class Academy(commands.Cog):
         join_url = await zoom.generate_join_url(AU_ID, AU_PASSWORD)
         await ctx.send(f"Generated new zoom meeting: {join_url}")
 
+    @commands.command(name="restart")
+    @commands.is_owner()
+    async def restart(self, ctx):
+        await ctx.send("Restarting...")
+        await self.bot.change_presence(activity=Game(name="Restarting..."))
+        await self.bot.close()
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.id == FURA_ID:
             await self.fura(message.channel, text=message.content)
 
 
-bot.add_cog(Academy(bot))
+def init_bot():
+    bot = commands.Bot("!", case_insensitive=True)
+    bot.add_cog(Academy(bot))
+    return bot
+
+
+async def main():
+    bot = init_bot()
+    await bot.start(DISCORD_TOKEN)
+
+    print("Restarting...")
+    os.execvp("python", ["python", *sys.argv])
+
 
 if __name__ == "__main__":
-    bot.run(DISCORD_TOKEN)
+    asyncio.run(main())
