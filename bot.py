@@ -423,7 +423,7 @@ class Academy(commands.Cog):
             if academy_id:
                 session.add(Link(discord_id=discord_id, academy_id=academy_id))
 
-    @typing_command(name="link")
+    @typing_command(name="link", help="Links an academy user to your discord user.")
     async def link(self, ctx, academy_id: int):
         try:
             username = await self.get_username(academy_id)
@@ -449,18 +449,25 @@ class Academy(commands.Cog):
             f"{ctx.author.mention} is now linked with {username} on academy."
         )
 
-    @typing_command(name="unlink", aliases=["ul"])
+    @typing_command(
+        name="unlink",
+        aliases=["ul"],
+        help="Removes a linked academy user created by !link.",
+    )
     async def unlink(self, ctx):
         self.set_linked_account(ctx.author.id, None)
         await ctx.send(
             f"{ctx.author.mention} is now no longer linked to any academy user."
         )
 
-    @typing_command(name="test")
+    @typing_command(
+        name="test",
+        help="A test commando.\nThe bot should reply with a mentioned message in the same channel.",
+    )
     async def test(self, ctx):
         await ctx.send(f"Test {ctx.author.mention}")
 
-    @typing_command(name="version", aliases=["v"])
+    @typing_command(name="version", aliases=["v"], help="Shows the version of the bot.")
     async def version(self, ctx):
         await ctx.send(f"I'm currently running the following version: {GIT_COMMIT_URL}")
 
@@ -486,13 +493,17 @@ class Academy(commands.Cog):
 
         return game_data
 
-    @typing_command(name="status", aliases=["s"])
+    @typing_command(name="status", aliases=["s"], help="Shows the status of a game.")
     async def status(self, ctx, game_id: Optional[int]):
         game_data = await self.get_game_data_from_ctx(ctx, game_id)
         if game_data:
             await self.post_game_update(game_data)
 
-    @typing_command(name="level", aliases=["l"])
+    @typing_command(
+        name="level",
+        aliases=["l"],
+        help="Shows what level a user should be on in a game.\nRequires that your discord user is linked to an academy user using !link.",
+    )
     async def level(self, ctx, game_id: Optional[int]):
         game_data = await self.get_game_data_from_ctx(ctx, game_id)
         if not game_data:
@@ -517,7 +528,9 @@ class Academy(commands.Cog):
                 f"{ctx.author.mention} doesn't seem to be in game {game_id}."
             )
 
-    @typing_command(name="table", aliases=["t"])
+    @typing_command(
+        name="table", aliases=["t"], help="Shows a table of the cards drawn in a game."
+    )
     async def table(self, ctx, game_id: Optional[int]):
         game_data = await self.get_game_data_from_ctx(ctx, game_id)
         if not game_data:
@@ -546,7 +559,7 @@ class Academy(commands.Cog):
 
         await ctx.send(f"```\n{code_block_escape(t.draw())}\n```")
 
-    @typing_command(name="eval")
+    @typing_command(name="eval", help="Evaluates arbitrary python code.")
     @commands.is_owner()
     async def eval(self, ctx, *, stmts):
         stmts = stmts.strip().strip("`")
@@ -570,7 +583,10 @@ class Academy(commands.Cog):
 
         await ctx.send(message)
 
-    @typing_command(name="fura")
+    @typing_command(
+        name="fura",
+        help="Creates an image with the specified text using the FURA template.",
+    )
     async def fura(self, ctx, *, text):
         text = text.strip()
 
@@ -591,7 +607,11 @@ class Academy(commands.Cog):
             f.seek(0)
             await ctx.send(file=File(f, "fura.png"))
 
-    @typing_command(name="distribute", aliases=["d"])
+    @typing_command(
+        name="distribute",
+        aliases=["d"],
+        help='Distributes a set of players into games.\nSpecifying "a=b=c" will add the constraint that a, b and c must be in the same game.',
+    )
     async def distribute(self, ctx, *players):
         TIMEOUT = 10
 
@@ -639,12 +659,16 @@ class Academy(commands.Cog):
 
         await ctx.send(message)
 
-    @typing_command(name="zoom", aliases=["z"])
+    @typing_command(
+        name="zoom",
+        aliases=["z"],
+        help="Schedules a new zoom meeting and outputs the join url.",
+    )
     async def zoom(self, ctx):
         join_url = await zoom.generate_join_url(AU_ID, AU_PASSWORD)
         await ctx.send(f"Generated new zoom meeting: {join_url}")
 
-    @commands.command(name="restart")
+    @commands.command(name="restart", help="Restarts the bot.")
     @commands.is_owner()
     async def restart(self, ctx):
         self.should_restart = True
