@@ -188,6 +188,10 @@ def typing_command(*cargs, **ckwargs):
 
 
 class Academy(commands.Cog):
+    """
+    Commands related to Academy.
+    """
+
     AIOHTTP_TIMEOUT = aiohttp.ClientTimeout(total=5)
 
     def __init__(self, bot):
@@ -195,7 +199,6 @@ class Academy(commands.Cog):
         self.game_datas = {}
         self.update_game_datas.start()
         self.first_on_ready = True
-        self.should_restart = False
 
     def cog_unload(self):
         self.update_game_datas.cancel()
@@ -460,17 +463,6 @@ class Academy(commands.Cog):
             f"{ctx.author.mention} is now no longer linked to any academy user."
         )
 
-    @typing_command(
-        name="test",
-        help="A test commando.\nThe bot should reply with a mentioned message in the same channel.",
-    )
-    async def test(self, ctx):
-        await ctx.send(f"Test {ctx.author.mention}")
-
-    @typing_command(name="version", aliases=["v"], help="Shows the version of the bot.")
-    async def version(self, ctx):
-        await ctx.send(f"I'm currently running the following version: {GIT_COMMIT_URL}")
-
     async def get_game_data_from_ctx(self, ctx, game_id):
         if game_id == None:
             if isinstance(ctx.channel, TextChannel) and ctx.channel.guild == self.guild:
@@ -559,54 +551,6 @@ class Academy(commands.Cog):
 
         await ctx.send(f"```\n{code_block_escape(t.draw())}\n```")
 
-    @typing_command(name="eval", help="Evaluates arbitrary python code.")
-    @commands.is_owner()
-    async def eval(self, ctx, *, stmts):
-        stmts = stmts.strip().strip("`")
-        if not stmts:
-            await ctx.send("After stripping `'s, stmts can't be empty.")
-            return
-
-        res = await eval_stmts(stmts, {"academy": self, "ctx": ctx})
-        escaped = code_block_escape(repr(res))
-        message = f"```python\n{escaped}\n```"
-        if len(message) > MAX_DISCORD_MESSAGE_LENGTH:
-            # The reason that we can safely truncate the message
-            # is because of how code_block_escape works
-            prefix = "Truncated result to length 0000:\n"
-            suffix = "\n```"
-            message = message.rstrip("`").strip()
-
-            new_length = MAX_DISCORD_MESSAGE_LENGTH - len(prefix) - len(suffix)
-            prefix = prefix.replace("0000", str(new_length))
-            message = prefix + message[:new_length] + suffix
-
-        await ctx.send(message)
-
-    @typing_command(
-        name="fura",
-        help="Creates an image with the specified text using the FURA template.",
-    )
-    async def fura(self, ctx, *, text):
-        text = text.strip()
-
-        img = Image.open(FURA_TEMPLATE)
-        d = ImageDraw.Draw(img)
-        fnt = get_max_font(d, "DejaVuSans.ttf", text, FURA_TEMPLATE_SIZE)
-        size = d.textsize(text, fnt)
-        offset = [
-            template_offset + (template_size - text_size) // 2
-            for text_size, template_size, template_offset in zip(
-                size, FURA_TEMPLATE_SIZE, FURA_TEMPLATE_OFFSET
-            )
-        ]
-        d.text(offset, text, font=fnt, fill=(0, 0, 0))
-
-        with io.BytesIO() as f:
-            img.save(f, format="png")
-            f.seek(0)
-            await ctx.send(file=File(f, "fura.png"))
-
     @typing_command(
         name="distribute",
         aliases=["d"],
@@ -659,6 +603,87 @@ class Academy(commands.Cog):
 
         await ctx.send(message)
 
+
+class Admin(commands.Cog):
+    """
+    Commands that can only be used by an admin.
+    """
+
+    def __init__(self, bot):
+        self.bot = bot
+        self.should_restart = False
+
+    async def cog_check(self, ctx):
+        return await self.bot.is_owner(ctx.author)
+
+    @commands.command(name="restart", help="Restarts the bot.")
+    async def restart(self, ctx):
+        self.should_restart = True
+        await ctx.send("Restarting...")
+        await self.bot.change_presence(activity=Game(name="Restarting..."))
+        await self.bot.close()
+
+    @typing_command(name="eval", help="Evaluates arbitrary python code.")
+    async def eval(self, ctx, *, stmts):
+        stmts = stmts.strip().strip("`")
+        if not stmts:
+            await ctx.send("After stripping `'s, stmts can't be empty.")
+            return
+
+        res = await eval_stmts(stmts, {"academy": self, "ctx": ctx})
+        escaped = code_block_escape(repr(res))
+        message = f"```python\n{escaped}\n```"
+        if len(message) > MAX_DISCORD_MESSAGE_LENGTH:
+            # The reason that we can safely truncate the message
+            # is because of how code_block_escape works
+            prefix = "Truncated result to length 0000:\n"
+            suffix = "\n```"
+            message = message.rstrip("`").strip()
+
+            new_length = MAX_DISCORD_MESSAGE_LENGTH - len(prefix) - len(suffix)
+            prefix = prefix.replace("0000", str(new_length))
+            message = prefix + message[:new_length] + suffix
+
+        await ctx.send(message)
+
+
+class Misc(commands.Cog):
+    """
+    Miscellaneous commands.
+    """
+
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author.id == FURA_ID:
+            await self.fura(message.channel, text=message.content)
+
+    @typing_command(
+        name="fura",
+        help="Creates an image with the specified text using the FURA template.",
+    )
+    async def fura(self, ctx, *, text):
+        text = text.strip()
+
+        img = Image.open(FURA_TEMPLATE)
+        d = ImageDraw.Draw(img)
+        fnt = get_max_font(d, "DejaVuSans.ttf", text, FURA_TEMPLATE_SIZE)
+        size = d.textsize(text, fnt)
+        offset = [
+            template_offset + (template_size - text_size) // 2
+            for text_size, template_size, template_offset in zip(
+                size, FURA_TEMPLATE_SIZE, FURA_TEMPLATE_OFFSET
+            )
+        ]
+        d.text(offset, text, font=fnt, fill=(0, 0, 0))
+
+        with io.BytesIO() as f:
+            img.save(f, format="png")
+            f.seek(0)
+            await ctx.send(file=File(f, "fura.png"))
+
     @typing_command(
         name="zoom",
         aliases=["z"],
@@ -668,32 +693,34 @@ class Academy(commands.Cog):
         join_url = await zoom.generate_join_url(AU_ID, AU_PASSWORD)
         await ctx.send(f"Generated new zoom meeting: {join_url}")
 
-    @commands.command(name="restart", help="Restarts the bot.")
-    @commands.is_owner()
-    async def restart(self, ctx):
-        self.should_restart = True
-        await ctx.send("Restarting...")
-        await self.bot.change_presence(activity=Game(name="Restarting..."))
-        await self.bot.close()
+    @typing_command(
+        name="test",
+        help="A test commando.\nThe bot should reply with a mentioned message in the same channel.",
+    )
+    async def test(self, ctx):
+        await ctx.send(f"Test {ctx.author.mention}")
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if message.author.id == FURA_ID:
-            await self.fura(message.channel, text=message.content)
+    @typing_command(name="version", aliases=["v"], help="Shows the version of the bot.")
+    async def version(self, ctx):
+        await ctx.send(f"I'm currently running the following version: {GIT_COMMIT_URL}")
 
 
 def init_bot():
     bot = commands.Bot("!", case_insensitive=True)
-    academy = Academy(bot)
-    bot.add_cog(academy)
-    return academy
+    bot.add_cog(Academy(bot))
+    bot.add_cog(Admin(bot))
+    misc = Misc(bot)
+    bot.add_cog(misc)
+    bot.help_command.cog = misc
+    return bot
 
 
 def main():
-    academy = init_bot()
-    academy.bot.run(DISCORD_TOKEN)
+    bot = init_bot()
+    admin = bot.get_cog("Admin")
+    bot.run(DISCORD_TOKEN)
 
-    if academy.should_restart:
+    if admin.should_restart:
         print("Restarting...")
         os.execvp("python", ["python", *sys.argv])
 
