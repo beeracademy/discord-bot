@@ -630,7 +630,7 @@ class Admin(commands.Cog):
             await ctx.send("After stripping `'s, stmts can't be empty.")
             return
 
-        res = await eval_stmts(stmts, {"academy": self, "ctx": ctx})
+        res = await eval_stmts(stmts, {"bot": self.bot, "ctx": ctx})
         escaped = code_block_escape(repr(res))
         message = f"```python\n{escaped}\n```"
         if len(message) > MAX_DISCORD_MESSAGE_LENGTH:
