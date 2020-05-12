@@ -9,7 +9,7 @@ from typing import Optional
 
 import aiohttp
 import timeout_decorator
-from discord import File, Game, utils
+from discord import Activity, ActivityType, File, utils
 from discord.channel import TextChannel
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
@@ -219,15 +219,12 @@ class Academy(commands.Cog):
 
     async def update_status(self):
         if self.game_datas:
-            await self.bot.change_presence(
-                activity=Game(
-                    f"{plural(len(self.game_datas), 'live game')}: {list(self.game_datas.keys())}"
-                )
-            )
+            activity_str = f"{plural(len(self.game_datas), 'live game')}: {list(self.game_datas.keys())}"
         else:
-            await self.bot.change_presence(
-                activity=Game(name="Waiting for new players: https://academy.beer/")
-            )
+            activity_str = "site for new players: https://academy.beer/"
+
+        activity = Activity(name=activity_str, type=ActivityType.watching)
+        await self.bot.change_presence(activity=activity)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
