@@ -718,7 +718,7 @@ def main():
     bot.run(DISCORD_TOKEN)
 
     if admin.should_restart:
-        print("Restarting...")
+        logging.info("Restarting...")
         os.execvp("python", ["python", *sys.argv])
 
 
