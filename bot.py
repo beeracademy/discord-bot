@@ -9,7 +9,7 @@ from typing import Optional
 
 import aiohttp
 import timeout_decorator
-from discord import Activity, ActivityType, File, utils
+from discord import Activity, ActivityType, File, Game, utils
 from discord.channel import TextChannel
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
