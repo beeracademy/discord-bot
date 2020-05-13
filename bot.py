@@ -427,7 +427,7 @@ class Academy(commands.Cog):
     async def link(self, ctx, academy_id: int):
         try:
             username = await self.get_username(academy_id)
-        except:
+        except aiohttp.ClientResponseError:
             await ctx.send("Couldn't get user data! Does the user exist?")
             return
 
