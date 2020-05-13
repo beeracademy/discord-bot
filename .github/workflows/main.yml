@@ -27,7 +27,7 @@ jobs:
     - name: Deploy image to production
       run: |
         for url in $WEBHOOK_URLS; do
-          curl -X POST "$url"
+          curl --fail -X POST "$url"
         done
       env:
         WEBHOOK_URLS: ${{ secrets.WEBHOOK_URLS }}
