@@ -1,4 +1,5 @@
 import asyncio
+from urllib.parse import urlparse
 
 from pyppeteer import launch
 
@@ -17,8 +18,8 @@ async def set_value(page, selector, value):
     await set_attr(page, selector, "value", value)
 
 
-async def wait_for_url(page, url):
-    while page.url != url:
+async def wait_for_domain(page, domain):
+    while urlparse(page.url).netloc != domain:
         await page.waitForNavigation()
 
 
@@ -31,7 +32,7 @@ async def generate_join_url(username, password):
     await set_value(page, "#password", password)
     await page.click("input[type=submit]")
 
-    await wait_for_url(page, "https://aarhusuniversity.zoom.us/profile")
+    await wait_for_domain(page, "aarhusuniversity.zoom.us")
 
     await page.goto("https://aarhusuniversity.zoom.us/meeting/schedule")
 
