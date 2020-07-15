@@ -46,6 +46,9 @@ AU_ID = os.environ["AU_ID"]
 AU_PASSWORD = os.environ["AU_PASSWORD"]
 
 
+DOMAIN = os.environ.get("DOMAIN", "https://academy.beer/")
+
+
 MAX_FINISHED_GAMES = 10
 MAX_DISCORD_MESSAGE_LENGTH = 2000
 
@@ -175,6 +178,14 @@ def code_block_escape(s):
     return ns
 
 
+def escape(s):
+    return utils.escape_markdown(utils.escape_mentions(s))
+
+
+def format_escaped(s, *args, **kwargs):
+    return s.format(*map(escape, args), **{k: escape(v) for k, v in kwargs.items()})
+
+
 def typing_command(*cargs, **ckwargs):
     def inner(f):
         @wraps(f)
@@ -221,7 +232,7 @@ class Academy(commands.Cog):
         if self.game_datas:
             activity_str = f"{plural(len(self.game_datas), 'live game')}: {list(self.game_datas.keys())}"
         else:
-            activity_str = "site for new players: https://academy.beer/"
+            activity_str = f"site for new players: {DOMAIN}"
 
         activity = Activity(name=activity_str, type=ActivityType.watching)
         await self.bot.change_presence(activity=activity)
@@ -252,7 +263,7 @@ class Academy(commands.Cog):
         if discord_id:
             return self.bot.get_user(discord_id).mention
         else:
-            return player_stats["username"]
+            return escape(player_stats["username"])
 
     def level_info(self, player_stats):
         return f"To be on level they have to have drunk {plural(player_stats['full_beers'], 'full beer')} and {plural(player_stats['extra_sips'], 'sip')}."
@@ -284,7 +295,7 @@ class Academy(commands.Cog):
             channel = await self.guild.create_text_channel(
                 channel_name,
                 category=self.live_category,
-                topic=f"Game with {user_str}: https://academy.beer/games/{game_id}/",
+                topic=f"Game with {user_str}: {DOMAIN}games/{game_id}/",
             )
             await channel.edit(position=0)
 
@@ -339,7 +350,7 @@ class Academy(commands.Cog):
             while True:
                 try:
                     async with session.get(
-                        f"https://academy.beer/api/games/live_games/"
+                        f"{DOMAIN}api/games/live_games/"
                     ) as response:
                         game_ids = set(d["id"] for d in await response.json())
                         break
@@ -370,7 +381,12 @@ class Academy(commands.Cog):
                 final_data = await self.get_game_data(game_id)
                 await self.send_in_game_channel(
                     game_id,
-                    f"Game has now ended.\nDescription: {final_data['description']}\nSee https://academy.beer/games/{game_id}/ for more info.",
+                    format_escaped(
+                        f"""Game has now ended.
+Description: {{description}}
+See {DOMAIN}games/{game_id}/ for more info.""",
+                        description=final_data["description"],
+                    ),
                 )
                 del self.game_datas[game_id]
 
@@ -399,9 +415,7 @@ class Academy(commands.Cog):
         ) as session:
             while True:
                 try:
-                    async with session.get(
-                        f"https://academy.beer/api/games/{game_id}/"
-                    ) as response:
+                    async with session.get(f"{DOMAIN}api/games/{game_id}/") as response:
                         res = await response.json()
                         return res
                 except asyncio.TimeoutError:
@@ -412,9 +426,7 @@ class Academy(commands.Cog):
         async with aiohttp.ClientSession(
             raise_for_status=True, timeout=self.AIOHTTP_TIMEOUT
         ) as session:
-            async with session.get(
-                f"https://academy.beer/api/users/{user_id}/"
-            ) as response:
+            async with session.get(f"{DOMAIN}api/users/{user_id}/") as response:
                 return (await response.json())["username"]
 
     def set_linked_account(self, discord_id, academy_id):
@@ -441,12 +453,18 @@ class Academy(commands.Cog):
             linked_discord_id = self.get_discord_id(academy_id)
             linked_mention = self.bot.get_user(linked_discord_id).mention
             await ctx.send(
-                f"{ctx.author.mention} {username} is already linked to {linked_mention}!"
+                format_escaped(
+                    f"{ctx.author.mention} {{username}} is already linked to {linked_mention}!",
+                    username=username,
+                )
             )
             return
 
         await ctx.send(
-            f"{ctx.author.mention} is now linked with {username} on academy."
+            format_escaped(
+                f"{ctx.author.mention} is now linked with {{username}} on academy.",
+                username=username,
+            )
         )
 
     @typing_command(
@@ -595,7 +613,7 @@ class Academy(commands.Cog):
 
         message = f"Partitioned players into {n} games:\n"
         for i, game_group in enumerate(game_groups):
-            players = ", ".join([p for group in game_group for p in group])
+            players = ", ".join([escape(p) for group in game_group for p in group])
             message += f"Game {i + 1}: {players}\n"
 
         await ctx.send(message)
