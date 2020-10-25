@@ -575,6 +575,9 @@ See {DOMAIN}games/{game_id}/ for more info.""",
         TIMEOUT = 10
 
         n = len(players)
+        if n == 0:
+            await ctx.send("Need at least one player.")
+            return
 
         groups = {}
         group_sizes = []
