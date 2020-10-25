@@ -12,6 +12,7 @@ import timeout_decorator
 from discord import Activity, ActivityType, File, Game, utils
 from discord.channel import TextChannel
 from discord.ext import commands, tasks
+from discord.ext.commands.errors import CommandError
 from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
 from sqlalchemy.exc import IntegrityError
@@ -632,7 +633,10 @@ class Admin(commands.Cog):
         self.should_restart = False
 
     async def cog_check(self, ctx):
-        return await self.bot.is_owner(ctx.author)
+        if not await self.bot.is_owner(ctx.author):
+            raise CommandError(f"{ctx.author.mention} isn't the bot owner.")
+        else:
+            return True
 
     @commands.command(name="restart", help="Restarts the bot.")
     async def restart(self, ctx):
