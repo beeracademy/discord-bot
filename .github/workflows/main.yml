@@ -6,7 +6,7 @@ on:
       - master
 
 env:
-  DOCKER_IMAGE_NAME: ghcr.io/beeracademy/game
+  DOCKER_IMAGE_NAME: ghcr.io/beeracademy/discord-bot
 
 jobs:
   build:

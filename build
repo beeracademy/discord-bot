@@ -1,4 +1,4 @@
 #!/bin/bash
 GIT_COMMIT_HASH=$(git rev-parse HEAD)
-name=ghcr.io/beeracademy/web
+name=ghcr.io/beeracademy/discord-bot
 docker build -t "$name" -t "$name:$GIT_COMMIT_HASH" --build-arg "GIT_COMMIT_HASH=$GIT_COMMIT_HASH" .
