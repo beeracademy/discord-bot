@@ -594,7 +594,9 @@ See {DOMAIN}games/{game_id}/ for more info.""",
 
         try:
             game_group_sizes = run_with_timeout(
-                partition_solve, [group_sizes, 6], seconds=TIMEOUT,
+                partition_solve,
+                [group_sizes, 6],
+                seconds=TIMEOUT,
             )
         except TimeoutError:
             await ctx.send(
