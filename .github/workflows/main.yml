@@ -5,6 +5,9 @@ on:
     branches:
       - master
 
+env:
+  DOCKER_IMAGE_NAME: ghcr.io/beeracademy/game
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,13 +19,13 @@ jobs:
     - name: Build image
       run: ./build
 
-    - name: Publish image to Docker Hub
+    - name: Publish image to ghcr.io
       run: |
-        echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
-        docker push beeracademy/discord-bot
+        echo "$GHCR_PASSWORD" | docker login ghcr.io --username "$GHCR_USERNAME" --password-stdin
+        docker push "$DOCKER_IMAGE_NAME"
       env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+        GHCR_PASSWORD: ${{ secrets.GHCR_PASSWORD }}
 
     - name: Deploy image to production
       run: curl --fail -X POST "$WEBHOOK_URL"

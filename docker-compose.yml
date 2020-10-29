@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   app:
-    image: beeracademy/discord-bot
+    image: ghcr.io/beeracademy/discord-bot
     volumes:
       - ./db.sqlite3:/app/db.sqlite3
       - ./.env:/app/.env
