@@ -242,6 +242,12 @@ class Academy(commands.Cog):
     async def on_command_error(self, ctx, error):
         await ctx.send(f"Got an error: {error}")
 
+    def set_linked_account(self, discord_id, academy_id):
+        with session_scope() as session:
+            session.query(Link).filter(Link.discord_id == discord_id).delete()
+            if academy_id:
+                session.add(Link(discord_id=discord_id, academy_id=academy_id))
+
     def get_academy_id(self, discord_id):
         with session_scope() as session:
             try:
@@ -250,19 +256,28 @@ class Academy(commands.Cog):
             except NoResultFound:
                 return None
 
-    def get_discord_id(self, academy_id):
+    def get_discord_user(self, academy_id):
         with session_scope() as session:
             try:
                 link = session.query(Link).filter(Link.academy_id == academy_id).one()
-                return link.discord_id
             except NoResultFound:
                 return None
 
+            discord_id = link.discord_id
+
+        user = self.bot.get_user(discord_id)
+        if not user:
+            logging.warning(
+                f"Link for academy id {academy_id} contains invalid discord id: {discord_id}"
+            )
+
+        return user
+
     def get_player_name(self, player_stats):
         academy_id = player_stats["id"]
-        discord_id = self.get_discord_id(academy_id)
-        if discord_id:
-            return self.bot.get_user(discord_id).mention
+        discord_user = self.get_discord_user(academy_id)
+        if discord_user:
+            return user.mention
         else:
             return escape(player_stats["username"])
 
@@ -430,12 +445,6 @@ See {DOMAIN}games/{game_id}/ for more info.""",
             async with session.get(f"{DOMAIN}api/users/{user_id}/") as response:
                 return (await response.json())["username"]
 
-    def set_linked_account(self, discord_id, academy_id):
-        with session_scope() as session:
-            session.query(Link).filter(Link.discord_id == discord_id).delete()
-            if academy_id:
-                session.add(Link(discord_id=discord_id, academy_id=academy_id))
-
     @typing_command(name="link", help="Links an academy user to your discord user.")
     async def link(self, ctx, academy_id: int):
         try:
@@ -451,8 +460,12 @@ See {DOMAIN}games/{game_id}/ for more info.""",
         try:
             self.set_linked_account(discord_id, academy_id)
         except IntegrityError:
-            linked_discord_id = self.get_discord_id(academy_id)
-            linked_mention = self.bot.get_user(linked_discord_id).mention
+            linked_user = self.get_discord_user(academy_id)
+            if linked_user:
+                linked_mention = linked_user.mention
+            else:
+                linked_mention = f"(invalid discord user)"
+
             await ctx.send(
                 format_escaped(
                     f"{ctx.author.mention} {{username}} is already linked to {linked_mention}!",
