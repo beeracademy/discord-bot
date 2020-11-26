@@ -9,7 +9,7 @@ from typing import Optional
 
 import aiohttp
 import timeout_decorator
-from discord import Activity, ActivityType, File, Game, utils
+from discord import Activity, ActivityType, File, Game, Intents, utils
 from discord.channel import TextChannel
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandError
@@ -743,7 +743,8 @@ class Misc(commands.Cog):
 
 
 def init_bot():
-    bot = commands.Bot("!", case_insensitive=True)
+    intents = Intents.all()
+    bot = commands.Bot("!", case_insensitive=True, intents=intents)
     bot.add_cog(Academy(bot))
     bot.add_cog(Admin(bot))
     misc = Misc(bot)
