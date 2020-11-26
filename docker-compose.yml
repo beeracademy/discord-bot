@@ -3,6 +3,7 @@ version: "3.7"
 services:
   app:
     image: ghcr.io/beeracademy/discord-bot
+    restart: always
     volumes:
       - ./db.sqlite3:/app/db.sqlite3
       - ./.env:/app/.env
