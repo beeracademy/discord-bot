@@ -277,7 +277,7 @@ class Academy(commands.Cog):
         academy_id = player_stats["id"]
         discord_user = self.get_discord_user(academy_id)
         if discord_user:
-            return user.mention
+            return discord_user.mention
         else:
             return escape(player_stats["username"])
 
