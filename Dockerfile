@@ -1,4 +1,4 @@
-FROM python:3.8
+FROM python:3.9
 
 # For pyppeteer
 RUN apt-get update && apt-get install -y chromium && rm -rf /var/lib/apt/lists/*
