@@ -358,23 +358,12 @@ class Academy(commands.Cog):
 
         await self.send_in_game_channel(game_data["id"], message)
 
-    @tasks.loop(seconds=1)
-    async def update_game_datas(self):
+    async def _update_game_datas(self):
         async with aiohttp.ClientSession(
             raise_for_status=True, timeout=self.AIOHTTP_TIMEOUT
         ) as session:
-            while True:
-                try:
-                    async with session.get(
-                        f"{DOMAIN}api/games/live_games/"
-                    ) as response:
-                        game_ids = set(d["id"] for d in await response.json())
-                        break
-                except asyncio.TimeoutError:
-                    logging.info(
-                        "Failed to get list of live games, retrying in 1 second..."
-                    )
-                    await asyncio.sleep(1)
+            async with session.get(f"{DOMAIN}api/games/live_games/") as response:
+                game_ids = set(d["id"] for d in await response.json())
 
         old_game_ids = set(self.game_datas.keys())
 
@@ -420,6 +409,13 @@ See {DOMAIN}games/{game_id}/ for more info.""",
 
         if game_ids != old_game_ids:
             await self.update_status()
+
+    @tasks.loop(seconds=1)
+    async def update_game_datas(self):
+        try:
+            await self._update_game_datas()
+        except Exception as e:
+            logging.error(f"Got exception during update: {e}")
 
     @update_game_datas.before_loop
     async def wait_until_ready(self):
