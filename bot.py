@@ -384,15 +384,20 @@ class Academy(commands.Cog):
             if game_id not in game_ids:
                 logging.info(f"Game is done: {game_id}")
                 final_data = await self.get_game_data(game_id)
-                await self.send_in_game_channel(
-                    game_id,
-                    format_escaped(
-                        f"""Game has now ended.
-Description: {{description}}
-See {DOMAIN}games/{game_id}/ for more info.""",
-                        description=final_data["description"],
-                    ),
-                )
+                if final_data:
+                    await self.send_in_game_channel(
+                        game_id,
+                        format_escaped(
+                            f"""Game has now ended.
+    Description: {{description}}
+    See {DOMAIN}games/{game_id}/ for more info.""",
+                            description=final_data["description"],
+                        ),
+                    )
+                else:
+                    await self.send_in_game_channel(
+                        game_id, "Game seems to have been deleted."
+                    )
                 del self.game_datas[game_id]
 
         live_channels = {
@@ -430,6 +435,8 @@ See {DOMAIN}games/{game_id}/ for more info.""",
                     async with session.get(f"{DOMAIN}api/games/{game_id}/") as response:
                         res = await response.json()
                         return res
+                except aiohttp.ClientResponseError:
+                    return None
                 except asyncio.TimeoutError:
                     logging.info("Timed out getting game data, retrying in 1 second...")
                     await asyncio.sleep(1)
@@ -515,6 +522,8 @@ See {DOMAIN}games/{game_id}/ for more info.""",
         game_data = await self.get_game_data_from_ctx(ctx, game_id)
         if game_data:
             await self.post_game_update(game_data)
+        else:
+            await ctx.send("Couldn't find game with that id. Perhaps it was deleted?")
 
     @typing_command(
         name="level",
@@ -524,6 +533,7 @@ See {DOMAIN}games/{game_id}/ for more info.""",
     async def level(self, ctx, game_id: Optional[int]):
         game_data = await self.get_game_data_from_ctx(ctx, game_id)
         if not game_data:
+            await ctx.send("Couldn't find game with that id. Perhaps it was deleted?")
             return
 
         game_id = game_data["id"]
@@ -551,6 +561,7 @@ See {DOMAIN}games/{game_id}/ for more info.""",
     async def table(self, ctx, game_id: Optional[int]):
         game_data = await self.get_game_data_from_ctx(ctx, game_id)
         if not game_data:
+            await ctx.send("Couldn't find game with that id. Perhaps it was deleted?")
             return
 
         t = Texttable()
