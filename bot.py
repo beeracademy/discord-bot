@@ -603,6 +603,8 @@ class Academy(commands.Cog):
         groups = {}
         group_sizes = []
         for p in players:
+            # Apparently people sometimes separates players by ","
+            p = p.replace(",", "")
             group = p.split("=")
             groups.setdefault(len(group), []).append(group)
             group_sizes.append(len(group))
