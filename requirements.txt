@@ -26,7 +26,7 @@ multidict==6.0.2
     # via
     #   aiohttp
     #   yarl
-pillow==9.0.0
+pillow==9.1.0
     # via -r requirements.in
 pycparser==2.21
     # via cffi
@@ -36,21 +36,21 @@ pynacl==1.4.0
     # via discord.py
 pyppeteer2==0.2.2
     # via -r requirements.in
-python-dotenv==0.19.2
+python-dotenv==0.20.0
     # via -r requirements.in
 six==1.16.0
     # via pynacl
-sqlalchemy==1.4.31
+sqlalchemy==1.4.35
     # via -r requirements.in
 texttable==1.6.4
     # via -r requirements.in
 timeout-decorator==0.5.0
     # via -r requirements.in
-tqdm==4.62.3
+tqdm==4.64.0
     # via pyppeteer2
-typing-extensions==4.0.1
+typing-extensions==4.1.1
     # via aiohttp
-urllib3==1.26.8
+urllib3==1.26.9
     # via pyppeteer2
 websockets==8.1
     # via pyppeteer2
