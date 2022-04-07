@@ -54,6 +54,13 @@ MAX_FINISHED_GAMES = 10
 MAX_DISCORD_MESSAGE_LENGTH = 2000
 
 
+def channel_name_to_id(channel_name: str) -> int:
+    try:
+        return int(channel_name.removeprefix("academy_"))
+    except:
+        return -1
+
+
 def run_with_timeout(f, fargs=[], fkwargs={}, *args, **kwargs):
     return timeout_decorator.timeout(*args, timeout_exception=TimeoutError, **kwargs)(
         f
@@ -409,7 +416,11 @@ class Academy(commands.Cog):
 
         finished_channels = self.finished_category.channels
         if len(finished_channels) > MAX_FINISHED_GAMES:
-            for c in sorted(finished_channels, key=lambda c: c.name, reverse=True)[10:]:
+            for c in sorted(
+                finished_channels,
+                key=lambda c: channel_name_to_id(c.name),
+                reverse=True,
+            )[10:]:
                 await c.delete()
 
         if game_ids != old_game_ids:
