@@ -142,8 +142,8 @@ def get_max_font(image_draw, font_name, text, max_size):
     size = 0
     while True:
         fnt = ImageFont.truetype(font_name, size=size)
-        text_size = image_draw.textsize(text, fnt)
-        if text_size[0] > max_size[0] or text_size[1] > max_size[1]:
+        _, _, width, height = image_draw.textbbox((0, 0), text, fnt)
+        if width > max_size[0] or height > max_size[1]:
             break
         size += 1
 
@@ -727,7 +727,7 @@ class Misc(commands.Cog):
         img = Image.open(FURA_TEMPLATE)
         d = ImageDraw.Draw(img)
         fnt = get_max_font(d, "DejaVuSans.ttf", text, FURA_TEMPLATE_SIZE)
-        size = d.textsize(text, fnt)
+        _, _, *size = d.textbbox((0, 0), text, fnt)
         offset = [
             template_offset + (template_size - text_size) // 2
             for text_size, template_size, template_offset in zip(
@@ -762,21 +762,22 @@ class Misc(commands.Cog):
         await ctx.send(f"I'm currently running the following version: {GIT_COMMIT_URL}")
 
 
-def init_bot():
+async def init_bot():
     intents = Intents.all()
     bot = commands.Bot("!", case_insensitive=True, intents=intents)
-    bot.add_cog(Academy(bot))
-    bot.add_cog(Admin(bot))
+    await bot.add_cog(Academy(bot))
+    await bot.add_cog(Admin(bot))
     misc = Misc(bot)
-    bot.add_cog(misc)
+    await bot.add_cog(misc)
     bot.help_command.cog = misc
     return bot
 
 
-def main():
-    bot = init_bot()
+async def main():
+    bot = await init_bot()
     admin = bot.get_cog("Admin")
-    bot.run(DISCORD_TOKEN)
+    async with bot:
+        await bot.start(DISCORD_TOKEN)
 
     if admin.should_restart:
         logging.info("Restarting...")
@@ -784,4 +785,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

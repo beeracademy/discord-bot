@@ -4,55 +4,57 @@
 #
 #    pip-compile requirements.in
 #
-aiohttp==3.7.4.post0
+aiohttp==3.8.3
     # via discord.py
+aiosignal==1.3.1
+    # via aiohttp
 appdirs==1.4.4
     # via pyppeteer2
-async-timeout==3.0.1
+async-timeout==4.0.2
     # via aiohttp
-attrs==21.4.0
+attrs==22.1.0
     # via aiohttp
-cffi==1.15.0
+cffi==1.15.1
     # via pynacl
-chardet==4.0.0
+charset-normalizer==2.1.1
     # via aiohttp
-discord.py[voice]==1.7.3
+discord.py[voice]==2.1.0
     # via -r requirements.in
-greenlet==1.1.2
+frozenlist==1.3.3
+    # via
+    #   aiohttp
+    #   aiosignal
+greenlet==2.0.1
     # via sqlalchemy
-idna==3.3
+idna==3.4
     # via yarl
 multidict==6.0.2
     # via
     #   aiohttp
     #   yarl
-pillow==9.1.0
+pillow==9.3.0
     # via -r requirements.in
 pycparser==2.21
     # via cffi
 pyee==7.0.4
     # via pyppeteer2
-pynacl==1.4.0
+pynacl==1.5.0
     # via discord.py
 pyppeteer2==0.2.2
     # via -r requirements.in
-python-dotenv==0.20.0
+python-dotenv==0.21.0
     # via -r requirements.in
-six==1.16.0
-    # via pynacl
-sqlalchemy==1.4.35
+sqlalchemy==1.4.44
     # via -r requirements.in
-texttable==1.6.4
+texttable==1.6.6
     # via -r requirements.in
 timeout-decorator==0.5.0
     # via -r requirements.in
-tqdm==4.64.0
+tqdm==4.64.1
     # via pyppeteer2
-typing-extensions==4.1.1
-    # via aiohttp
-urllib3==1.26.9
+urllib3==1.26.12
     # via pyppeteer2
 websockets==8.1
     # via pyppeteer2
-yarl==1.7.2
+yarl==1.8.1
     # via aiohttp
