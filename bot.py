@@ -4,6 +4,7 @@ import logging
 import os
 import random
 import sys
+import traceback
 from functools import wraps
 from typing import Optional
 
@@ -326,7 +327,8 @@ class Academy(commands.Cog):
 
     async def send_in_game_channel(self, game_id, message):
         channel = await self.get_game_channel(game_id)
-        await channel.send(message)
+        if channel is not None:
+            await channel.send(message)
 
     async def post_game_update(self, game_data):
         player_stats = game_data["player_stats"]
@@ -431,6 +433,7 @@ class Academy(commands.Cog):
         try:
             await self._update_game_datas()
         except Exception as e:
+            traceback.print_exc()
             logging.error(f"Got exception during update: {e}")
 
     @update_game_datas.before_loop
