@@ -32,7 +32,7 @@ multidict==6.0.2
     # via
     #   aiohttp
     #   yarl
-pillow==9.3.0
+pillow==10.0.1
     # via -r requirements.in
 pycparser==2.21
     # via cffi
