@@ -1,18 +1,21 @@
-FROM python:3.10
+FROM python:3.13
 
 # For pyppeteer
 RUN apt-get update && apt-get install -y chromium && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+COPY --from=ghcr.io/astral-sh/uv:0.5.28 /uv /uvx /bin/
+COPY pyproject.toml uv.lock .
+RUN uv sync --frozen --no-install-project --no-dev
+ENV PATH="/app/.venv/bin:$PATH"
 
-RUN pyppeteer-install
+RUN uv run pyppeteer-install
 
 COPY . /app
+RUN uv sync --frozen --no-dev
 
 ARG GIT_COMMIT_HASH
-ENV GIT_COMMIT_HASH $GIT_COMMIT_HASH
+ENV GIT_COMMIT_HASH=$GIT_COMMIT_HASH
 
 CMD ["python", "bot.py"]

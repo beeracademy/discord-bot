@@ -1,7 +1,0 @@
-discord.py[voice]
-python-dotenv
-sqlalchemy
-texttable
-Pillow
-timeout-decorator
-pyppeteer2
