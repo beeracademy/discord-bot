@@ -685,7 +685,15 @@ class Admin(commands.Cog):
 
     @typing_command(name="eval", help="Evaluates arbitrary python code.")
     async def eval(self, ctx, *, stmts):
-        stmts = stmts.strip().strip("`")
+        stmts = stmts.strip()
+        if stmts.startswith("```"):
+            parts = stmts.split("\n", maxsplit=1)
+            if len(parts) == 2:
+                stmts = parts[1]
+            else:
+                stmts = ""
+
+        stmts = stmts.rstrip("`")
         if not stmts:
             await ctx.send("After stripping `'s, stmts can't be empty.")
             return
