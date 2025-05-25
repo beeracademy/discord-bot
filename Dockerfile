@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y chromium && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY --from=ghcr.io/astral-sh/uv:0.5.28 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.7.8 /uv /uvx /bin/
 COPY pyproject.toml uv.lock .
 RUN uv sync --frozen --no-install-project --no-dev
 ENV PATH="/app/.venv/bin:$PATH"
