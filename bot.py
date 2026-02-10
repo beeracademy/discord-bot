@@ -1,5 +1,4 @@
 import asyncio
-import io
 import logging
 import os
 import random
@@ -15,7 +14,6 @@ from discord.channel import TextChannel
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandError
 from dotenv import load_dotenv
-from PIL import Image, ImageDraw, ImageFont
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from texttable import Texttable
@@ -23,6 +21,7 @@ from texttable import Texttable
 import zoom
 from db import Link, session_scope
 from eval_stmts import eval_stmts
+from fura import create_fura_image
 
 logging.basicConfig(level=logging.INFO)
 
@@ -137,22 +136,6 @@ def partition_solve(l, max_size):
 
 def div_ceil(a, b):
     return (a - 1) // b + 1
-
-
-def get_max_font(image_draw, font_name, text, max_size):
-    size = 0
-    while True:
-        fnt = ImageFont.truetype(font_name, size=size)
-        _, _, width, height = image_draw.textbbox((0, 0), text, fnt)
-        if width > max_size[0] or height > max_size[1]:
-            break
-        size += 1
-
-    # Ensure size is a nonnegative integer
-    if size > 0:
-        size -= 1
-
-    return ImageFont.truetype(font_name, size=size)
 
 
 def get_dict(l, **kwargs):
@@ -733,23 +716,7 @@ class Misc(commands.Cog):
         help="Creates an image with the specified text using the FURA template.",
     )
     async def fura(self, ctx, *, text):
-        text = text.strip()
-
-        img = Image.open(FURA_TEMPLATE)
-        d = ImageDraw.Draw(img)
-        fnt = get_max_font(d, "DejaVuSans.ttf", text, FURA_TEMPLATE_SIZE)
-        _, _, *size = d.textbbox((0, 0), text, fnt)
-        offset = [
-            template_offset + (template_size - text_size) // 2
-            for text_size, template_size, template_offset in zip(
-                size, FURA_TEMPLATE_SIZE, FURA_TEMPLATE_OFFSET
-            )
-        ]
-        d.text(offset, text, font=fnt, fill=(0, 0, 0))
-
-        with io.BytesIO() as f:
-            img.save(f, format="png")
-            f.seek(0)
+        with create_fura_image(text.strip()) as f:
             await ctx.send(file=File(f, "fura.png"))
 
     @typing_command(
