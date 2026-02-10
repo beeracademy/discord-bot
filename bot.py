@@ -57,7 +57,7 @@ MAX_DISCORD_MESSAGE_LENGTH = 2000
 def channel_name_to_id(channel_name: str) -> int:
     try:
         return int(channel_name.removeprefix("academy_"))
-    except:
+    except ValueError:
         return -1
 
 
@@ -67,7 +67,7 @@ def run_with_timeout(f, fargs=[], fkwargs={}, *args, **kwargs):
     )(*fargs, **fkwargs)
 
 
-def partition_solve(l, max_size):
+def partition_solve(weights, max_size):
     """
     Given a list of integers and a maximum bucket size,
     returns a partitioning of the list into k different buckets
@@ -84,11 +84,11 @@ def partition_solve(l, max_size):
     [[4, 4, 4, 5], [4, 4, 5, 5]]
     """
 
-    assert 0 <= min(l)
-    assert max(l) <= max_size
+    assert 0 <= min(weights)
+    assert max(weights) <= max_size
 
-    n = len(l)
-    total = sum(l)
+    n = len(weights)
+    total = sum(weights)
 
     best = (n + 1, 0, [])
     global_best_possible = (div_ceil(total, max_size), int(total % max_size > 0))
@@ -115,12 +115,12 @@ def partition_solve(l, max_size):
             if j == len(space_left):
                 space_left.append(max_size)
 
-            if space_left[j] >= l[i]:
-                space_left[j] -= l[i]
+            if space_left[j] >= weights[i]:
+                space_left[j] -= weights[i]
                 assignments.append(j)
                 aux(i + 1, space_left, assignments)
                 assignments.pop()
-                space_left[j] += l[i]
+                space_left[j] += weights[i]
 
         space_left.pop()
 
@@ -129,7 +129,7 @@ def partition_solve(l, max_size):
     k, _, assignments = best
     res = [[] for _ in range(k)]
     for i, j in enumerate(assignments):
-        res[j].append(l[i])
+        res[j].append(weights[i])
 
     return res
 
@@ -138,8 +138,8 @@ def div_ceil(a, b):
     return (a - 1) // b + 1
 
 
-def get_dict(l, **kwargs):
-    for d in l:
+def get_dict(dicts, **kwargs):
+    for d in dicts:
         if all(d[k] == v for k, v in kwargs.items()):
             return d
 
@@ -283,7 +283,7 @@ class Academy(commands.Cog):
         chug_done = 1
         if cards:
             c = cards[-1]
-            if c["value"] == 14 and c["chug_duration_ms"] == None:
+            if c["value"] == 14 and c["chug_duration_ms"] is None:
                 chug_done = 0
 
         return (len(cards), chug_done)
@@ -333,7 +333,7 @@ class Academy(commands.Cog):
 
             if card["value"] == 14:
                 duration = card["chug_duration_ms"]
-                if duration == None:
+                if duration is None:
                     is_ace_not_done = True
                     message += (
                         f"{previous_player_name} just got an ace, so they have to chug!"
@@ -464,7 +464,7 @@ class Academy(commands.Cog):
             if linked_user:
                 linked_mention = linked_user.mention
             else:
-                linked_mention = f"(invalid discord user)"
+                linked_mention = "(invalid discord user)"
 
             await ctx.send(
                 format_escaped(
@@ -493,7 +493,7 @@ class Academy(commands.Cog):
         )
 
     async def get_game_data_from_ctx(self, ctx, game_id):
-        if game_id == None:
+        if game_id is None:
             if isinstance(ctx.channel, TextChannel) and ctx.channel.guild == self.guild:
                 parts = ctx.channel.name.split("_")
                 if len(parts) == 2 and parts[0] == "academy":
@@ -502,7 +502,6 @@ class Academy(commands.Cog):
                     except ValueError:
                         pass
 
-        if game_id == None:
             await ctx.send(
                 f"{ctx.author.mention} you either have to provide the game id as an argument or use the command in the associated chat."
             )
@@ -536,7 +535,7 @@ class Academy(commands.Cog):
         game_id = game_data["id"]
 
         academy_id = self.get_academy_id(ctx.author.id)
-        if academy_id == None:
+        if academy_id is None:
             await ctx.send(
                 f"{ctx.author.mention} you need to `!link` your discord account with your academy account."
             )
@@ -625,8 +624,8 @@ class Academy(commands.Cog):
 
         n = len(game_group_sizes)
 
-        for l in groups.values():
-            random.shuffle(l)
+        for group in groups.values():
+            random.shuffle(group)
 
         game_groups = []
         for group_sizes in game_group_sizes:
